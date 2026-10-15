@@ -33,24 +33,60 @@ export async function middleware(request) {
   const isAuthenticated = Boolean(user || demoCookie);
   const { pathname } = request.nextUrl;
 
-  // Public routes — never redirect unauthenticated, redirect authenticated to /dashboard
-  const publicRoutes = ['/login', '/auth/callback'];
-  if (publicRoutes.some((r) => pathname.startsWith(r))) {
-    if (isAuthenticated) return NextResponse.redirect(new URL('/dashboard', request.url));
+  // 1. Immediately pass all Next.js internals, static files, and asset requests
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api') ||
+    pathname.startsWith('/brand') ||
+    pathname.startsWith('/icons') ||
+    pathname.startsWith('/images') ||
+    pathname.startsWith('/.well-known') ||
+    pathname.includes('.')
+  ) {
+    return NextResponse.next();
+  }
+
+  // 2. Public auth and status routes — never require authentication
+  const publicRoutes = [
+    '/',
+    '/login',
+    '/register',
+    '/forgot-password',
+    '/reset-password',
+    '/verify-email',
+    '/accept-invitation',
+    '/unauthorized',
+    '/auth/callback',
+  ];
+
+  const isPublic = publicRoutes.some((route) => pathname === route || pathname.startsWith(`${route}/`));
+
+  if (isPublic) {
+    if (isAuthenticated && pathname === '/login') {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
     return response;
   }
 
-  // Protected routes — require auth
+  // 3. Protected workspace routes — require authentication
   if (!isAuthenticated) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirectTo', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-
   return response;
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    /*
+     * Match all request paths except:
+     * 1. /_next/static (static files)
+     * 2. /_next/image (image optimization files)
+     * 3. /favicon.ico (favicon file)
+     * 4. Static assets with extensions (.svg, .png, .jpg, .jpeg, .gif, .webp, .ico, .css, .js, .map)
+     */
+    '/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|css|js|map|woff|woff2|ttf)$).*)',
+  ],
 };
