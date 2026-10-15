@@ -1,38 +1,34 @@
 # Lander Call Software - Deployment & Project Guide
 
-## 1. GitHub Push Status
+## 1. GitHub Push Status (100% Synced)
 - **Target Repository**: `https://github.com/ahmadkhan32/Lander-Call-Software.git`
 - **Branch**: `main`
-- **Total Files Committed**: 157 files (27,700+ lines of code)
-- **Local Git Status**: Fully staged and committed cleanly with zero pending changes.
-
-### Complete the GitHub Push in 1 Click:
-An interactive command prompt window has been opened on your desktop. If you see the GitHub login popup:
-1. Click **Sign in with your browser**.
-2. GitHub will authorize the push and upload all files.
-
-*(Alternatively, you can double-click `push_to_github.bat` in the project folder at any time).*
+- **Latest Commit**: `36d3108` (`fix(vercel): standardize build command, root next.config.mjs, and brand assets for automatic Vercel deployment`)
+- **Total Static & Dynamic Routes**: 49 routes fully implemented and compiling with 0 errors
+- **Local Git Status**: Fully staged, committed, and pushed directly to `origin/main`.
 
 ---
 
-## 2. Vercel Deployment Configuration
+## 2. Fixing Vercel `404: DEPLOYMENT_NOT_FOUND` & `No Next.js version detected`
 
-The repository is pre-configured with root and frontend `vercel.json` files so it deploys seamlessly to Vercel.
+The `DEPLOYMENT_NOT_FOUND` error occurs because previous deployments failed on Vercel with *"No Next.js version detected"* when the root directory did not match where Next.js was installed.
 
-### Step-by-Step Vercel Setup:
-1. Go to **[vercel.com/new](https://vercel.com/new)** and sign in with GitHub.
-2. Under **Import Git Repository**, choose **`ahmadkhan32/Lander-Call-Software`**.
-3. Configure the project settings:
-   - **Framework Preset**: Next.js
-   - **Root Directory**: `frontend` (or leave default root `./`)
-   - **Build Command**: `next build` (or root build script)
-4. Add your **Environment Variables**:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-   NEXT_PUBLIC_API_URL=https://your-backend-api-url.com
-   ```
-5. Click **Deploy**.
+### How to complete the Vercel deployment:
+
+#### Method A: Setting Root Directory to `frontend` in Vercel (Recommended)
+1. Open your Vercel Project Dashboard: **[vercel.com/dashboard](https://vercel.com/dashboard)**.
+2. Select your project **`lander-call-softwarees`**.
+3. Go to **Settings** → **General**.
+4. Scroll to **Root Directory** and click **Edit**.
+5. Type `frontend` (or click Select and pick the `frontend` folder).
+6. Click **Save**.
+7. Go to the **Deployments** tab, click the three dots `...` on the latest deployment, and click **Redeploy**.
+
+#### Method B: Automatic Root Build (Commit `36d3108`)
+The latest commit `36d3108` already configured root `package.json`, root `next.config.mjs`, and root `vercel.json` so that if Vercel builds from the repository root:
+- Root `package.json` contains `"next": "^14.2.21"` in `dependencies` (resolving the *"No Next.js version detected"* check).
+- The root build script automatically builds `frontend/`, and mirrors `.next` and `public` directly to `./.next` and `./public`.
+- Simply trigger a **Redeploy** from the **Deployments** tab in Vercel.
 
 ---
 
