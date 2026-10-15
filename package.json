@@ -20,5 +20,10 @@
     "supabase"
   ],
   "author": "Ahmad Khan",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^5.4.11"
+  }
 }

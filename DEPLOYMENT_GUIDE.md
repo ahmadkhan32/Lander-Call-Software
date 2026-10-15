@@ -3,32 +3,32 @@
 ## 1. GitHub Push Status (100% Synced)
 - **Target Repository**: `https://github.com/ahmadkhan32/Lander-Call-Software.git`
 - **Branch**: `main`
-- **Latest Commit**: `36d3108` (`fix(vercel): standardize build command, root next.config.mjs, and brand assets for automatic Vercel deployment`)
-- **Total Static & Dynamic Routes**: 49 routes fully implemented and compiling with 0 errors
-- **Local Git Status**: Fully staged, committed, and pushed directly to `origin/main`.
+- **Frontend Stack**: **React.js + Vite + Tailwind CSS** (JavaScript/JSX only, zero TypeScript)
+- **Backend Stack**: **Node.js + Express.js REST API**
+- **Database**: **Supabase (PostgreSQL + Auth + RLS)**
+- **Total Operational Routes**: 24+ public and protected routes inside responsive AppShell with MobileNav
 
 ---
 
-## 2. Fixing Vercel `404: DEPLOYMENT_NOT_FOUND` & `No Next.js version detected`
+## 2. Deploying the Vite SPA to Vercel (`lander-call-softwarees.vercel.app`)
 
-The `DEPLOYMENT_NOT_FOUND` error occurs because previous deployments failed on Vercel with *"No Next.js version detected"* when the root directory did not match where Next.js was installed.
+Because the frontend is built with **Vite** (not Next.js), Vercel must build using the **Vite Framework Preset** and output to **`dist`**.
 
-### How to complete the Vercel deployment:
+### Recommended Step-by-Step Vercel Deployment:
 
-#### Method A: Setting Root Directory to `frontend` in Vercel (Recommended)
 1. Open your Vercel Project Dashboard: **[vercel.com/dashboard](https://vercel.com/dashboard)**.
 2. Select your project **`lander-call-softwarees`**.
-3. Go to **Settings** → **General**.
-4. Scroll to **Root Directory** and click **Edit**.
-5. Type `frontend` (or click Select and pick the `frontend` folder).
-6. Click **Save**.
-7. Go to the **Deployments** tab, click the three dots `...` on the latest deployment, and click **Redeploy**.
+3. Go to **Settings** → **General**:
+   - **Framework Preset**: Select **`Vite`** (or leave as detected).
+   - **Root Directory**: Click **Edit**, enter **`frontend`**, and click **Save**.
+   - **Build Command**: `npm run build` (or `vite build`).
+   - **Output Directory**: `dist`.
+4. Go to the **Deployments** tab:
+   - Click the three dots `...` on the latest deployment from the `main` branch.
+   - Click **Redeploy** (ensure "Use existing Build Cache" is unchecked).
+5. Vercel will install dependencies, run `vite build`, and publish your SPA to **`https://lander-call-softwarees.vercel.app/`**.
 
-#### Method B: Automatic Root Build (Commit `36d3108`)
-The latest commit `36d3108` already configured root `package.json`, root `next.config.mjs`, and root `vercel.json` so that if Vercel builds from the repository root:
-- Root `package.json` contains `"next": "^14.2.21"` in `dependencies` (resolving the *"No Next.js version detected"* check).
-- The root build script automatically builds `frontend/`, and mirrors `.next` and `public` directly to `./.next` and `./public`.
-- Simply trigger a **Redeploy** from the **Deployments** tab in Vercel.
+> **Note on Root Builds**: If Root Directory in Vercel is kept as `./`, the root `package.json` build script automatically builds `frontend/` and mirrors `dist/` directly into the root folder. Both configurations are supported.
 
 ---
 
