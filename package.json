@@ -10,6 +10,11 @@
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend run start"
   },
+  "dependencies": {
+    "next": "^14.2.21",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
   "keywords": [
     "call-center",
     "crm",
