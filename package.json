@@ -1,25 +1,21 @@
 {
   "name": "lander-call-software",
   "version": "1.0.0",
-  "description": "Lander Call Center & Lead Management Software (Next.js + Express + Supabase)",
+  "description": "Lander Call Center CRM & Operations Platform (Vite + React + Express + Supabase)",
   "private": true,
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs'); if(fs.existsSync('.next')) fs.rmSync('.next', {recursive:true,force:true}); fs.cpSync('frontend/.next', '.next', {recursive:true}); if(fs.existsSync('frontend/public')) { if(fs.existsSync('public')) fs.rmSync('public', {recursive:true,force:true}); fs.cpSync('frontend/public', 'public', {recursive:true}); }\"",
-    "start": "cd frontend && npm run start",
+    "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true,force:true}); if(fs.existsSync('frontend/dist')) fs.cpSync('frontend/dist', 'dist', {recursive:true});\"",
+    "preview": "npm --prefix frontend run preview",
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend run start"
-  },
-  "dependencies": {
-    "next": "^14.2.21",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1"
   },
   "keywords": [
     "call-center",
     "crm",
     "lead-management",
-    "nextjs",
+    "vite",
+    "react",
     "express",
     "supabase"
   ],
