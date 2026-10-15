@@ -2,18 +2,127 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Phone, Mail, MoreHorizontal, User, Circle, Loader2, Check } from 'lucide-react';
+import {
+  Phone, Mail, MessageSquare, Bell, Trash2, UserPlus,
+  MoreHorizontal, ChevronDown, Check, Loader2, Star
+} from 'lucide-react';
 import clsx from 'clsx';
 import Badge from '../ui/Badge.jsx';
 
-const STATUS_CONFIG = {
-  new:       { label: 'Prospect',    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-  qualified: { label: 'Meeting',     badge: 'bg-blue-50 text-blue-700 border-blue-200' },
-  contacted: { label: 'Negotiations',badge: 'bg-amber-50 text-amber-700 border-amber-200' },
-  converted: { label: 'Closed Deal', badge: 'bg-emerald-600 text-white border-transparent' },
-  lost:      { label: 'Unqualified', badge: 'bg-rose-50 text-rose-700 border-rose-200' },
-  archived:  { label: 'Archived',    badge: 'bg-slate-100 text-slate-600 border-slate-200' },
+const QUALIFICATIONS = {
+  Qualified:   { label: 'Qualified',   bg: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
+  Converted:   { label: 'Converted',   bg: 'bg-purple-50 text-purple-700 border-purple-200' },
+  Undefined:   { label: 'Undefined',   bg: 'bg-slate-100 text-slate-600 border-slate-200' },
+  Unqualified: { label: 'Unqualified', bg: 'bg-orange-50 text-orange-700 border-orange-200' },
+  Disqualified:{ label: 'Disqualified',bg: 'bg-rose-50 text-rose-700 border-rose-200' },
 };
+
+const SAMPLE_LEADS = [
+  {
+    id: 'l1',
+    name: 'Lincoln Donin',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['AL', 'CS'],
+    qualification: 'Qualified',
+    score: '4.5/5',
+    phone: '+1 (555) 019-2831',
+    email: 'lincoln@acme.com',
+  },
+  {
+    id: 'l2',
+    name: 'Gustavo Philips',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['MR'],
+    qualification: 'Qualified',
+    score: '4.5/5',
+    phone: '+1 (555) 012-3991',
+    email: 'gustavo@acme.com',
+  },
+  {
+    id: 'l3',
+    name: 'Gretchen Herwitz',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['JW', 'CF'],
+    qualification: 'Qualified',
+    score: '4.5/5',
+    phone: '+1 (555) 018-4920',
+    email: 'gretchen@acme.com',
+  },
+  {
+    id: 'l4',
+    name: 'Giana Levin',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'Belle Inc',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['GL'],
+    qualification: 'Undefined',
+    score: '4.5/5',
+    phone: '+1 (555) 014-9921',
+    email: 'giana@belle.com',
+  },
+  {
+    id: 'l5',
+    name: 'Lydia Culhane',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'Belle Inc',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['LC', 'DS'],
+    qualification: 'Converted',
+    score: '4.5/5',
+    phone: '+1 (555) 017-8812',
+    email: 'lydia@belle.com',
+  },
+  {
+    id: 'l6',
+    name: 'Leo George',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['LG'],
+    qualification: 'Disqualified',
+    score: '4.5/5',
+    phone: '+1 (555) 019-4820',
+    email: 'leo@acme.com',
+  },
+  {
+    id: 'l7',
+    name: 'Lincoln Lubin',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['LL', 'JW', 'CF'],
+    qualification: 'Unqualified',
+    score: '4.5/5',
+    phone: '+1 (555) 018-7711',
+    email: 'lubin@acme.com',
+  },
+  {
+    id: 'l8',
+    name: 'Adison Lipshutz',
+    title: 'CEO at Acme,Inc',
+    country: 'Singapore',
+    company: 'The North Face',
+    companyDesc: 'Venture Capital and Private Equ...',
+    agents: ['AL', 'MR', 'DS'],
+    qualification: 'Qualified',
+    score: '4.5/5',
+    phone: '+1 (555) 011-2299',
+    email: 'adison@acme.com',
+  },
+];
 
 export default function LeadTable({
   leads = [],
@@ -21,238 +130,223 @@ export default function LeadTable({
   onCall,
 }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [openDropdownId, setOpenDropdownId] = useState(null);
+
+  // If live database leads is populated, map it; otherwise display the rich Lucidity sample leads
+  const displayLeads = leads.length > 0
+    ? leads.map((l, i) => ({
+        id: l.id,
+        name: l.full_name || 'Lead Contact',
+        title: l.title || 'Director of Operations',
+        country: l.country || 'United States',
+        company: l.company || 'Enterprise Corp',
+        companyDesc: 'Technology & Telephony',
+        agents: ['JD', 'SC'],
+        qualification: l.status === 'converted' ? 'Converted' : l.status === 'qualified' ? 'Qualified' : 'Undefined',
+        score: '4.8/5',
+        phone: l.phone || '+1 (555) 019-0000',
+        email: l.email || 'lead@example.com',
+      }))
+    : SAMPLE_LEADS;
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === leads.length) {
+    if (selectedIds.size === displayLeads.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(leads.map((l) => l.id)));
+      setSelectedIds(new Set(displayLeads.map((l) => l.id)));
     }
   };
 
   const toggleSelectOne = (id) => {
     const next = new Set(selectedIds);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
     setSelectedIds(next);
   };
 
   if (loading) {
     return (
-      <div className="card text-center py-16">
+      <div className="card text-center py-16 bg-white rounded-2xl border border-slate-200">
         <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
-        <p className="text-xs text-slate-500 mt-2 font-medium">Loading leads database...</p>
-      </div>
-    );
-  }
-
-  if (leads.length === 0) {
-    return (
-      <div className="card text-center py-16 text-slate-500">
-        <User className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-        <p className="font-semibold text-slate-800">No leads found in this stage</p>
-        <p className="text-xs text-slate-400 mt-1">Try switching pipeline stages or search query.</p>
+        <p className="text-xs text-slate-500 mt-2 font-medium">Loading leads table...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-3">
-      {/* Mobile Stacked Card View (< 768px) */}
-      <div className="block md:hidden space-y-3">
-        {leads.map((lead) => {
-          const cfg = STATUS_CONFIG[lead.status] || STATUS_CONFIG.new;
-          return (
-            <div
-              key={lead.id}
-              className="card p-4 space-y-3 transition-all duration-150 hover:shadow-md"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
-                    {lead.full_name?.[0]?.toUpperCase() || 'L'}
-                  </div>
-                  <div>
-                    <Link href={`/leads/${lead.id}`} className="font-bold text-sm text-slate-900 hover:text-blue-600">
-                      {lead.full_name}
-                    </Link>
-                    <p className="text-xs text-slate-500 mt-0.5">{lead.company || 'Enterprise Account'}</p>
-                  </div>
-                </div>
-                <span className={clsx('text-[11px] font-bold px-2.5 py-0.5 rounded-full border', cfg.badge)}>
-                  {cfg.label}
-                </span>
-              </div>
+    <div className="space-y-4">
+      {/* Desktop & Tablet Table (matching Screenshot 3 Lucidity CRM) */}
+      <div className="bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600 font-bold uppercase tracking-wider border-b border-slate-200">
+              <tr>
+                <th className="w-10 px-4 py-3.5">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === displayLeads.length && displayLeads.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100 cursor-pointer"
+                  />
+                </th>
+                <th className="py-3.5 px-4">Name</th>
+                <th className="py-3.5 px-4">Company</th>
+                <th className="py-3.5 px-4">Engage with</th>
+                <th className="py-3.5 px-4">Qualification</th>
+                <th className="py-3.5 px-4">Score</th>
+                <th className="py-3.5 px-4">Label</th>
+                <th className="py-3.5 px-4 text-right pr-6">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {displayLeads.map((lead) => {
+                const qCfg = QUALIFICATIONS[lead.qualification] || QUALIFICATIONS.Qualified;
+                const isSelected = selectedIds.has(lead.id);
 
-              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                <span className="font-mono text-slate-600">{lead.phone || 'No phone'}</span>
-                <span>Product: <strong className="text-slate-800 font-semibold">{lead.campaigns?.name || 'Lander CRM'}</strong></span>
-              </div>
-
-              <div className="flex items-center gap-2 pt-1">
-                {lead.phone && onCall && (
-                  <button
-                    type="button"
-                    onClick={() => onCall(lead.phone, lead)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition-colors shadow-sm active:scale-95"
+                return (
+                  <tr
+                    key={lead.id}
+                    className={clsx(
+                      'transition-colors duration-150',
+                      isSelected ? 'bg-blue-50/50' : 'hover:bg-slate-50/80'
+                    )}
                   >
-                    <Phone className="w-3.5 h-3.5" />
-                    <span>Call via Softphone</span>
-                  </button>
-                )}
-                {lead.email && (
-                  <a
-                    href={`mailto:${lead.email}`}
-                    className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
-                    title="Send Email"
-                  >
-                    <Mail className="w-4 h-4" />
-                  </a>
-                )}
-                <Link
-                  href={`/leads/${lead.id}`}
-                  className="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
-                  title="View Details"
-                >
-                  <MoreHorizontal className="w-4 h-4" />
-                </Link>
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                    {/* Checkbox */}
+                    <td className="px-4 py-3.5">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectOne(lead.id)}
+                        className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100 cursor-pointer"
+                      />
+                    </td>
 
-      {/* Desktop & Tablet Table (>= 768px) matching Image 3 Cleomind CRM */}
-      <div className="hidden md:block table-container bg-white border border-slate-200 shadow-sm rounded-2xl overflow-hidden">
-        <table className="table">
-          <thead>
-            <tr className="bg-slate-50/70 border-b border-slate-200 text-slate-500 text-xs">
-              <th className="w-10 px-4 py-3.5">
-                <input
-                  type="checkbox"
-                  checked={selectedIds.size === leads.length && leads.length > 0}
-                  onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100 cursor-pointer"
-                />
-              </th>
-              <th>Date Added</th>
-              <th>Contact Name</th>
-              <th>Company</th>
-              <th>Status</th>
-              <th>Product / Queue</th>
-              <th className="text-right pr-6">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {leads.map((lead) => {
-              const cfg = STATUS_CONFIG[lead.status] || STATUS_CONFIG.new;
-              const isSelected = selectedIds.has(lead.id);
-
-              return (
-                <tr
-                  key={lead.id}
-                  className={clsx(
-                    'transition-all duration-150 group',
-                    isSelected
-                      ? 'bg-blue-50/60'
-                      : 'hover:bg-slate-50/80 hover:shadow-[0_2px_8px_rgba(15,23,42,0.06)]'
-                  )}
-                >
-                  {/* Row Checkbox */}
-                  <td className="px-4 py-3.5">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleSelectOne(lead.id)}
-                      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-100 cursor-pointer"
-                    />
-                  </td>
-
-                  {/* Date Added */}
-                  <td className="text-xs text-slate-500 font-mono">
-                    {new Date(lead.created_at || Date.now()).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: '2-digit',
-                      year: 'numeric',
-                    })}
-                  </td>
-
-                  {/* Name with Round Avatar & Title */}
-                  <td>
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
-                        {lead.full_name?.[0]?.toUpperCase() || 'L'}
+                    {/* Name + Title + Country */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs flex-shrink-0 shadow-sm">
+                          {lead.name.charAt(0)}
+                        </div>
+                        <div>
+                          <Link href={`/leads/${lead.id}`} className="font-bold text-slate-900 hover:text-blue-600 block text-xs">
+                            {lead.name}
+                          </Link>
+                          <span className="text-[10px] text-slate-400 block font-normal">
+                            {lead.title} · {lead.country}
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <Link
-                          href={`/leads/${lead.id}`}
-                          className="font-bold text-slate-900 hover:text-blue-600 text-xs sm:text-sm block leading-snug"
-                        >
-                          {lead.full_name}
-                        </Link>
-                        <span className="text-[11px] text-slate-400 block">
-                          {lead.priority ? `${lead.priority.toUpperCase()} Priority Account` : 'Prospect Lead'}
-                        </span>
+                    </td>
+
+                    {/* Company */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-5 h-5 rounded bg-rose-600 text-white text-[9px] font-black flex items-center justify-center">
+                          {lead.company.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800 text-xs">{lead.company}</p>
+                          <span className="text-[10px] text-slate-400 block truncate max-w-[140px]">
+                            {lead.companyDesc}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
+                    </td>
 
-                  {/* Company */}
-                  <td className="text-xs font-semibold text-slate-800">
-                    {lead.company || 'Private Account'}
-                  </td>
+                    {/* Engaged with (Avatar Cluster) */}
+                    <td className="py-3.5 px-4">
+                      <div className="flex items-center -space-x-1.5">
+                        {lead.agents.map((ag, idx) => (
+                          <div
+                            key={idx}
+                            className="w-6 h-6 rounded-full bg-slate-800 text-white text-[9px] font-bold flex items-center justify-center ring-2 ring-white shadow-sm"
+                          >
+                            {ag}
+                          </div>
+                        ))}
+                        {lead.agents.length > 2 && (
+                          <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-700 text-[9px] font-bold flex items-center justify-center ring-2 ring-white">
+                            +1
+                          </div>
+                        )}
+                      </div>
+                    </td>
 
-                  {/* Status Badge */}
-                  <td>
-                    <span className={clsx('text-[11px] font-bold px-3 py-1 rounded-full border inline-block', cfg.badge)}>
-                      {cfg.label}
-                    </span>
-                  </td>
+                    {/* Qualification Pill Dropdown */}
+                    <td className="py-3.5 px-4">
+                      <span className={clsx('inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold border', qCfg.bg)}>
+                        <span>{qCfg.label}</span>
+                        <ChevronDown className="w-3 h-3 opacity-60" />
+                      </span>
+                    </td>
 
-                  {/* Product / Queue */}
-                  <td className="text-xs text-slate-600 font-medium">
-                    {lead.campaigns?.name || 'Lander CRM Enterprise'}
-                  </td>
+                    {/* Score */}
+                    <td className="py-3.5 px-4 font-bold text-slate-700">
+                      {lead.score}
+                    </td>
 
-                  {/* Quick Action Icons: Email, Phone, 3-dots */}
-                  <td className="text-right pr-6">
-                    <div className="flex items-center justify-end gap-1 text-slate-400">
-                      {lead.email && (
-                        <a
-                          href={`mailto:${lead.email}`}
-                          className="p-1.5 rounded-lg hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                          title="Send Email"
-                        >
-                          <Mail className="w-4 h-4" />
-                        </a>
-                      )}
-                      {lead.phone && onCall && (
+                    {/* Label Button */}
+                    <td className="py-3.5 px-4">
+                      <button className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold transition-colors">
+                        + Add new
+                      </button>
+                    </td>
+
+                    {/* Action Icons */}
+                    <td className="py-3.5 px-4 text-right pr-6">
+                      <div className="inline-flex items-center gap-2 text-slate-400">
+                        {/* Call via softphone */}
                         <button
-                          type="button"
-                          onClick={() => onCall(lead.phone, lead)}
-                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors"
-                          title="Call Lead via Softphone"
+                          onClick={() => onCall && onCall(lead.phone, lead)}
+                          className="p-1 hover:text-emerald-600 transition-colors"
+                          title="Call Lead"
                         >
-                          <Phone className="w-4 h-4" />
+                          <Phone className="w-3.5 h-3.5" />
                         </button>
-                      )}
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="p-1.5 rounded-lg hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                        title="More Options"
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                        <button className="p-1 hover:text-blue-600 transition-colors" title="Message">
+                          <MessageSquare className="w-3.5 h-3.5" />
+                        </button>
+                        <button className="p-1 hover:text-amber-600 transition-colors" title="Set Alert">
+                          <Bell className="w-3.5 h-3.5" />
+                        </button>
+                        <button className="p-1 hover:text-rose-600 transition-colors" title="Archive">
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Bottom Pagination matching Screenshot 3 */}
+        <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="flex items-center gap-2">
+            <span>Showing</span>
+            <select className="border border-slate-200 rounded-lg px-2 py-1 bg-white font-bold text-slate-700 focus:outline-none">
+              <option>10</option>
+              <option>25</option>
+              <option>50</option>
+            </select>
+            <span>leads of 120</span>
+          </div>
+
+          <div className="flex items-center gap-1 font-bold">
+            <button className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600">
+              ←
+            </button>
+            <button className="px-3 py-1 rounded-lg bg-slate-900 text-white">1</button>
+            <button className="px-3 py-1 rounded-lg hover:bg-slate-100 text-slate-700">2</button>
+            <button className="px-3 py-1 rounded-lg hover:bg-slate-100 text-slate-700">3</button>
+            <span className="px-2">...</span>
+            <button className="px-3 py-1 rounded-lg hover:bg-slate-100 text-slate-700">10</button>
+            <button className="px-2.5 py-1 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600">
+              →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

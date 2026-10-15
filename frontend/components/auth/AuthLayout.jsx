@@ -1,119 +1,115 @@
 'use client';
 
 import Link from 'next/link';
-import SaaSSaleIllustration from './SaaSSaleIllustration.jsx';
+import { ShieldCheck, Zap, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 
 export default function AuthLayout({
   children,
-  brandTitle = 'Sale Admin',
-  brandSubtitle = 'Lander CRM',
+  headline = 'Welcome back to the future of call operations.',
+  subtitle = 'Access your unified dashboard to manage leads, auto-distribute inbound calls, track agent performance, and review AI-powered call analytics.',
 }) {
   return (
-    <div className="relative min-h-screen w-full bg-[#3B82F6] flex items-center justify-center p-3 sm:p-6 lg:p-10 overflow-hidden font-sans">
-      {/* Background Decorative Rings & Ambient Patterns (matches Screenshot 2) */}
-      {/* Concentric rings top-left */}
-      <div className="absolute -top-48 -left-48 w-[600px] h-[600px] pointer-events-none opacity-20">
-        <div className="w-full h-full rounded-full border-[36px] border-white/30 flex items-center justify-center">
-          <div className="w-[420px] h-[420px] rounded-full border-[32px] border-white/20 flex items-center justify-center">
-            <div className="w-[260px] h-[260px] rounded-full border-[28px] border-white/20" />
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen w-full bg-slate-900 flex items-center justify-center p-3 sm:p-6 lg:p-8 font-sans relative overflow-hidden">
+      {/* Background radial glow */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-900/30 via-slate-900 to-slate-950 pointer-events-none" />
 
-      {/* Concentric rings bottom-right */}
-      <div className="absolute -bottom-56 -right-56 w-[700px] h-[700px] pointer-events-none opacity-20">
-        <div className="w-full h-full rounded-full border-[40px] border-white/30 flex items-center justify-center">
-          <div className="w-[500px] h-[500px] rounded-full border-[34px] border-white/20 flex items-center justify-center">
-            <div className="w-[320px] h-[320px] rounded-full border-[28px] border-white/20" />
-          </div>
-        </div>
-      </div>
+      {/* Main Glassmorphic Card Container matching Screenshot 2 */}
+      <div className="relative z-10 w-full max-w-[1200px] bg-white rounded-[2rem] shadow-2xl shadow-slate-950/50 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[640px] border border-white/20">
+        
+        {/* Left Column: Solid Royal Blue #2563EB with Metrics & Headline */}
+        <section className="relative hidden lg:flex lg:col-span-6 flex-col justify-between p-10 xl:p-14 bg-gradient-to-br from-blue-600 via-blue-600 to-indigo-700 text-white overflow-hidden">
+          {/* Subtle wave/glow backdrop */}
+          <div className="absolute -right-20 -top-20 w-80 h-80 rounded-full bg-blue-400/20 blur-3xl pointer-events-none" />
+          <div className="absolute -left-20 -bottom-20 w-80 h-80 rounded-full bg-indigo-500/20 blur-3xl pointer-events-none" />
 
-      {/* Dot matrix pattern top-right */}
-      <div
-        className="absolute top-8 right-8 w-64 h-64 pointer-events-none opacity-25"
-        style={{
-          backgroundImage: 'radial-gradient(circle, #ffffff 2px, transparent 2.5px)',
-          backgroundSize: '20px 20px',
-        }}
-      />
-
-      {/* Bottom-left wave ripple lines */}
-      <div className="absolute bottom-6 left-6 pointer-events-none opacity-25 hidden sm:block">
-        <svg width="180" height="60" viewBox="0 0 180 60" fill="none">
-          <path d="M0 15C30 5 60 25 90 15C120 5 150 25 180 15" stroke="white" strokeWidth="3" strokeLinecap="round" />
-          <path d="M0 30C30 20 60 40 90 30C120 20 150 40 180 30" stroke="white" strokeWidth="3" strokeLinecap="round" />
-          <path d="M0 45C30 35 60 55 90 45C120 35 150 55 180 45" stroke="white" strokeWidth="3" strokeLinecap="round" />
-        </svg>
-      </div>
-
-      {/* Central Clean White Rounded Card */}
-      <div className="relative z-10 w-full max-w-5xl bg-white rounded-3xl sm:rounded-[2.25rem] shadow-2xl shadow-blue-950/25 overflow-hidden grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
-        {/* Left Column: Brand Logo & Vector Workspace Illustration (hidden on very small screens, visible on lg+) */}
-        <section className="relative hidden lg:flex lg:col-span-6 flex-col justify-between p-8 xl:p-12 bg-white border-r border-slate-100/80 overflow-hidden">
-          {/* Top Left Winged Brand Logo */}
-          <div className="flex items-center gap-2.5 z-10">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
-              {/* Dynamic Leaf / Wing shape */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 14C4 8.47715 8.47715 4 14 4H20V10C20 15.5228 15.5228 20 10 20H4V14Z"
-                  fill="white"
-                  fillOpacity="0.95"
-                />
-                <path
-                  d="M4 14C8 14 14 8 14 4"
-                  stroke="#2563EB"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                />
-              </svg>
+          {/* Top Logo Mark */}
+          <div className="flex items-center gap-3 z-10">
+            <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center text-white font-black text-xl shadow-inner">
+              L
             </div>
-            <div className="leading-tight">
-              <span className="block text-sm font-bold text-slate-800 tracking-tight">{brandTitle}</span>
-              <span className="block text-[10px] font-semibold text-blue-600 uppercase tracking-widest">{brandSubtitle}</span>
+            <div className="flex items-center gap-2">
+              <span className="font-extrabold text-xl tracking-tight text-white">LANDER</span>
+              <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-white/15 text-blue-100 border border-white/10">
+                Security v2.4
+              </span>
             </div>
           </div>
 
-          {/* Central Hero Illustration */}
-          <div className="my-auto py-6 z-10">
-            <SaaSSaleIllustration />
+          {/* Central Headline & Description */}
+          <div className="my-auto py-8 z-10 space-y-5 max-w-lg">
+            <h1 className="text-3xl xl:text-4xl font-extrabold tracking-tight leading-[1.2] text-white">
+              {headline}
+            </h1>
+            <p className="text-sm xl:text-base text-blue-100/90 leading-relaxed font-normal">
+              {subtitle}
+            </p>
+
+            {/* Badges strip */}
+            <div className="flex flex-wrap items-center gap-3 pt-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-white">
+                <ShieldCheck className="w-4 h-4 text-emerald-300" /> SOC 2 Certified
+              </span>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-semibold text-white">
+                <Zap className="w-4 h-4 text-amber-300" /> 99.9% Uptime
+              </span>
+            </div>
           </div>
 
-          {/* Footer note on left */}
-          <div className="flex items-center justify-between text-[11px] text-slate-400 z-10">
-            <span>Enterprise Call Center CRM</span>
-            <span className="font-medium text-blue-600">v1.2.0</span>
-          </div>
-
-          {/* Soft base cloud wave in background */}
-          <div className="absolute -bottom-8 -left-8 -right-8 h-32 bg-blue-50/50 rounded-t-full pointer-events-none" />
-        </section>
-
-        {/* Right Column: Form Container */}
-        <section className="relative lg:col-span-6 flex flex-col justify-center px-6 py-10 sm:px-12 sm:py-14 bg-white">
-          {/* Mobile Top Brand Header */}
-          <div className="flex lg:hidden items-center gap-2 mb-6">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-                <path
-                  d="M4 14C4 8.47715 8.47715 4 14 4H20V10C20 15.5228 15.5228 20 10 20H4V14Z"
-                  fill="white"
-                />
-              </svg>
+          {/* Bottom 3 Stats Row (matches Screenshot 2) */}
+          <div className="grid grid-cols-3 gap-4 pt-6 border-t border-white/15 z-10">
+            <div>
+              <p className="text-2xl xl:text-3xl font-black text-white tracking-tight">99.9%</p>
+              <p className="text-[11px] text-blue-200 uppercase font-semibold tracking-wider mt-0.5">Uptime SLA</p>
             </div>
             <div>
-              <span className="text-sm font-bold text-slate-800">{brandTitle}</span>
-              <span className="text-[10px] font-semibold text-blue-600 ml-1.5 uppercase tracking-wider">{brandSubtitle}</span>
+              <p className="text-2xl xl:text-3xl font-black text-white tracking-tight">&lt;50ms</p>
+              <p className="text-[11px] text-blue-200 uppercase font-semibold tracking-wider mt-0.5">API Response</p>
+            </div>
+            <div>
+              <p className="text-2xl xl:text-3xl font-black text-white tracking-tight">SOC 2</p>
+              <p className="text-[11px] text-blue-200 uppercase font-semibold tracking-wider mt-0.5">Compliant</p>
             </div>
           </div>
+        </section>
 
-          {/* Top-Right Soft Decorative Blob (matches Screenshot 2) */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50/60 rounded-bl-[4rem] pointer-events-none" />
+        {/* Right Column: Clean White Form Container */}
+        <section className="relative lg:col-span-6 flex flex-col justify-between p-6 sm:p-10 xl:p-12 bg-white">
+          {/* Top navigation row */}
+          <div className="flex items-center justify-between mb-4">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to home</span>
+            </Link>
 
-          {/* Main Form Content */}
-          <div className="w-full max-w-md mx-auto relative z-10">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 text-[11px] font-bold text-blue-700 tracking-wide uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse" />
+              Secure Login
+            </span>
+          </div>
+
+          {/* Form Content */}
+          <div className="w-full max-w-md mx-auto my-auto py-4">
             {children}
+          </div>
+
+          {/* Bottom Trust & Compliance Footnote */}
+          <div className="pt-6 border-t border-slate-100 text-center space-y-2">
+            <div className="flex items-center justify-center gap-4 text-xs font-semibold text-slate-500">
+              <span className="flex items-center gap-1 text-emerald-600">
+                <CheckCircle2 className="w-3.5 h-3.5" /> 256-bit encryption
+              </span>
+              <span className="flex items-center gap-1 text-blue-600">
+                <ShieldCheck className="w-3.5 h-3.5" /> SOC 2 compliant
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400">
+              By signing in, you agree to our{' '}
+              <a href="#" className="underline hover:text-slate-700">Terms of Service</a> and{' '}
+              <a href="#" className="underline hover:text-slate-700">Privacy Policy</a>
+            </p>
           </div>
         </section>
       </div>
