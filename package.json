@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "cd frontend && npm install && npm run build",
+    "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs'); if(fs.existsSync('.next')) fs.rmSync('.next', {recursive:true,force:true}); fs.cpSync('frontend/.next', '.next', {recursive:true}); if(fs.existsSync('frontend/public')) { if(fs.existsSync('public')) fs.rmSync('public', {recursive:true,force:true}); fs.cpSync('frontend/public', 'public', {recursive:true}); }\"",
     "start": "cd frontend && npm run start",
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend run start"
