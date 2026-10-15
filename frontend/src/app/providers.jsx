@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { ToastProvider } from '../components/ui/Toast';
+import { ROLE_LABELS } from '../lib/permissions';
 
 const AuthContext = createContext(null);
 
@@ -15,6 +16,7 @@ export function AuthProvider({ children }) {
       name: 'Sarah Miller',
       email: 'sarah.miller@landercrm.io',
       role: 'super_admin',
+      roleTitle: 'Super Admin',
       organization: 'Lander Global Enterprises',
     };
   });
@@ -49,12 +51,20 @@ export function AuthProvider({ children }) {
     try {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
-        // Fallback for demo credentials
+        const assignedRole = email.includes('admin')
+          ? 'super_admin'
+          : email.includes('qa')
+          ? 'qa_officer'
+          : email.includes('manager')
+          ? 'manager'
+          : 'agent';
+
         const demoUser = {
           id: 'usr_demo_' + Date.now(),
           name: email.split('@')[0].replace('.', ' '),
           email,
-          role: email.includes('admin') ? 'super_admin' : 'agent',
+          role: assignedRole,
+          roleTitle: ROLE_LABELS[assignedRole] || 'Call Center User',
           organization: 'Lander Call Center CRM',
         };
         setUser(demoUser);
@@ -69,14 +79,26 @@ export function AuthProvider({ children }) {
 
   const loginDemo = (role = 'super_admin') => {
     const demoUser = {
-      id: 'usr_demo_admin',
-      name: 'Sarah Miller',
-      email: 'sarah.miller@landercrm.io',
+      id: 'usr_demo_' + role,
+      name: role === 'agent' ? 'Emily Chen' : role === 'qa_officer' ? 'David Ross' : 'Sarah Miller',
+      email: `${role.replace('_', '.')}@landercrm.io`,
       role,
+      roleTitle: ROLE_LABELS[role] || 'Authorized User',
       organization: 'Lander Global Enterprises',
     };
     setUser(demoUser);
     localStorage.setItem('lander_demo_user', JSON.stringify(demoUser));
+  };
+
+  const switchRole = (newRole) => {
+    if (!user) return;
+    const updated = {
+      ...user,
+      role: newRole,
+      roleTitle: ROLE_LABELS[newRole] || newRole,
+    };
+    setUser(updated);
+    localStorage.setItem('lander_demo_user', JSON.stringify(updated));
   };
 
   const logout = async () => {
@@ -87,7 +109,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, loginDemo, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, loginDemo, switchRole, logout }}>
       <ToastProvider>
         {children}
       </ToastProvider>

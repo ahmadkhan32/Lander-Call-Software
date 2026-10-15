@@ -10,31 +10,38 @@ import {
   Headphones,
   CheckCircle,
   BarChart3,
-  ShieldCheck,
   Settings,
-  Bell,
+  ShieldCheck,
+  FileText,
+  Radio,
   LogOut,
-  HelpCircle,
-  ChevronRight,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../app/providers';
+import { hasPermission, PERMISSIONS, ROLE_LABELS } from '../../lib/permissions';
 
-const navItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard' },
-  { label: 'Leads', icon: Users2, path: '/app/leads', badge: '12' },
-  { label: 'Contacts', icon: Building2, path: '/app/customers' },
-  { label: 'Dialer Softphone', icon: Headphones, path: '/app/dialer', pulse: true },
-  { label: 'Call History', icon: PhoneCall, path: '/app/calls' },
-  { label: 'Follow-ups', icon: CalendarCheck2, path: '/app/follow-ups', badge: '5' },
-  { label: 'Campaigns', icon: FolderKanban, path: '/app/campaigns' },
-  { label: 'QA & Reviews', icon: CheckCircle, path: '/app/qa' },
-  { label: 'Reports', icon: BarChart3, path: '/app/reports' },
-  { label: 'Settings', icon: Settings, path: '/app/settings' },
+const allNavItems = [
+  { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard', permission: PERMISSIONS.VIEW_DASHBOARD },
+  { label: 'Leads CRM', icon: Users2, path: '/app/leads', badge: '12', permission: PERMISSIONS.MANAGE_LEADS },
+  { label: 'Customers', icon: Building2, path: '/app/customers', permission: PERMISSIONS.VIEW_CUSTOMERS },
+  { label: 'Dialer Softphone', icon: Headphones, path: '/app/dialer', pulse: true, permission: PERMISSIONS.CALL_DIALER },
+  { label: 'Call History', icon: PhoneCall, path: '/app/calls', permission: PERMISSIONS.VIEW_CALLS },
+  { label: 'Follow-ups', icon: CalendarCheck2, path: '/app/follow-ups', badge: '5', permission: PERMISSIONS.MANAGE_LEADS },
+  { label: 'Campaigns', icon: FolderKanban, path: '/app/campaigns', permission: PERMISSIONS.VIEW_CAMPAIGNS },
+  { label: 'QA & Reviews', icon: CheckCircle, path: '/app/qa', permission: PERMISSIONS.VIEW_QA },
+  { label: 'Reports', icon: BarChart3, path: '/app/reports', permission: PERMISSIONS.VIEW_REPORTS },
+  { label: 'Audit Logs', icon: FileText, path: '/app/audit-logs', permission: PERMISSIONS.VIEW_AUDIT_LOGS },
+  { label: 'Integrations', icon: Radio, path: '/app/integrations', permission: PERMISSIONS.MANAGE_INTEGRATIONS },
+  { label: 'Settings', icon: Settings, path: '/app/settings', permission: PERMISSIONS.MANAGE_SETTINGS },
 ];
 
 export function Sidebar({ onClose }) {
   const { user, logout } = useAuth();
+  const userRole = user?.role || 'super_admin';
+
+  const visibleNav = allNavItems.filter((item) =>
+    hasPermission(userRole, item.permission)
+  );
 
   return (
     <div className="flex h-full flex-col justify-between bg-navy text-white w-64 select-none">
@@ -50,9 +57,19 @@ export function Sidebar({ onClose }) {
           </div>
         </div>
 
+        {/* Current Active Role Badge */}
+        <div className="px-4 pt-3 pb-1">
+          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300">
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+            <span className="truncate font-semibold text-white">
+              {ROLE_LABELS[userRole] || userRole}
+            </span>
+          </div>
+        </div>
+
         {/* Navigation Links */}
-        <nav className="space-y-1 px-3 py-4 overflow-y-auto max-h-[calc(100vh-170px)]">
-          {navItems.map((item) => {
+        <nav className="space-y-1 px-3 py-3 overflow-y-auto max-h-[calc(100vh-190px)]">
+          {visibleNav.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink
@@ -89,7 +106,7 @@ export function Sidebar({ onClose }) {
         </nav>
       </div>
 
-      {/* User profile card at bottom (matching Image 2) */}
+      {/* User profile card at bottom */}
       <div className="p-3 border-t border-slate-800 bg-slate-900/60">
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/50">
           <div className="flex items-center gap-3 min-w-0">
@@ -98,7 +115,7 @@ export function Sidebar({ onClose }) {
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-white truncate">{user?.name || 'Sarah Miller'}</p>
-              <p className="text-[11px] text-slate-400 truncate capitalize">{user?.role || 'Administrator'}</p>
+              <p className="text-[11px] text-slate-400 truncate">{ROLE_LABELS[userRole] || userRole}</p>
             </div>
           </div>
           <button
