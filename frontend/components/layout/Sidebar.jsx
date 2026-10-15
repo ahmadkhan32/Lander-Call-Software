@@ -5,7 +5,8 @@ import Link from 'next/link';
 import {
   LayoutDashboard, Users, Target, Phone, Calendar,
   BarChart3, Settings, LogOut, PhoneCall, Radio,
-  ShieldCheck, Bell, Shield, X, Contact, Sparkles
+  ShieldCheck, Bell, Shield, X, Contact, Sparkles,
+  Headphones, CalendarDays, Filter, PhoneIncoming, Building2
 } from 'lucide-react';
 import clsx from 'clsx';
 import { createClient } from '../../lib/supabase/client.js';
@@ -17,13 +18,17 @@ const navSections = [
       { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
       { href: '/leads', label: 'Leads', icon: Target },
       { href: '/contacts', label: 'Contacts', icon: Contact },
-      { href: '/follow-ups', label: 'Follow-ups & Tasks', icon: Calendar },
+      { href: '/lead-sources', label: 'Lead Sources', icon: Filter },
+      { href: '/follow-ups', label: 'Follow-ups', icon: Calendar },
+      { href: '/calendar', label: 'Calendar', icon: CalendarDays },
     ],
   },
   {
-    title: 'Telephony & Outreach',
+    title: 'Agent & Telephony',
     items: [
+      { href: '/agent/workspace', label: 'Agent Workspace', icon: Headphones },
       { href: '/dialer', label: 'Softphone Dialer', icon: Radio },
+      { href: '/call-queues', label: 'Call Queues', icon: PhoneIncoming },
       { href: '/calls', label: 'Call Records', icon: Phone },
       { href: '/campaigns', label: 'Campaigns', icon: PhoneCall },
       { href: '/agents', label: 'Agent Roster', icon: Users },
@@ -37,7 +42,8 @@ const navSections = [
       { href: '/reports', label: 'Reports & Analytics', icon: BarChart3 },
       { href: '/notifications', label: 'Notifications', icon: Bell },
       { href: '/audit-logs', label: 'Audit Trail', icon: Shield },
-      { href: '/settings', label: 'System Settings', icon: Settings },
+      { href: '/settings', label: 'Settings', icon: Settings },
+      { href: '/platform/organizations', label: 'Platform Tenants', icon: Building2 },
     ],
   },
 ];
