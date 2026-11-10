@@ -32,10 +32,13 @@ import {
 } from '../features/dashboard/RoleDashboards';
 import { useAuth } from './providers';
 
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children, allowedRoles }) {
   const { user } = useAuth();
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== 'super_admin') {
+    return <Navigate to="/unauthorized" replace />;
   }
   return children;
 }
@@ -63,11 +66,11 @@ export const router = createBrowserRouter([
     element: <AuthCallbackPage />,
   },
 
-  // Dedicated Direct Role Dashboards (Section 2) wrapped in AppShell & ProtectedRoute
+  // Dedicated Direct Role Dashboards (Section 2) with Strict RBAC verification
   {
     path: '/super-admin/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['super_admin']}>
         <AppShell>
           <SuperAdminDashboard />
         </AppShell>
@@ -77,7 +80,7 @@ export const router = createBrowserRouter([
   {
     path: '/admin/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['business_admin', 'super_admin']}>
         <AppShell>
           <BusinessAdminDashboard />
         </AppShell>
@@ -87,7 +90,7 @@ export const router = createBrowserRouter([
   {
     path: '/manager/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['manager', 'business_admin', 'super_admin']}>
         <AppShell>
           <CallCenterManagerDashboard />
         </AppShell>
@@ -97,7 +100,7 @@ export const router = createBrowserRouter([
   {
     path: '/supervisor/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['supervisor', 'manager', 'business_admin', 'super_admin']}>
         <AppShell>
           <SupervisorDashboard />
         </AppShell>
@@ -107,7 +110,7 @@ export const router = createBrowserRouter([
   {
     path: '/agent/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['agent', 'supervisor', 'manager', 'business_admin', 'super_admin']}>
         <AppShell>
           <AgentDashboard />
         </AppShell>
@@ -117,7 +120,7 @@ export const router = createBrowserRouter([
   {
     path: '/crm/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['crm_manager', 'business_admin', 'super_admin']}>
         <AppShell>
           <CrmManagerDashboard />
         </AppShell>
@@ -127,7 +130,7 @@ export const router = createBrowserRouter([
   {
     path: '/qa/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['qa_officer', 'business_admin', 'super_admin']}>
         <AppShell>
           <QaOfficerDashboard />
         </AppShell>
@@ -137,7 +140,7 @@ export const router = createBrowserRouter([
   {
     path: '/reports/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['reporting_analyst', 'manager', 'business_admin', 'super_admin']}>
         <AppShell>
           <ReportingAnalystDashboard />
         </AppShell>
@@ -147,7 +150,7 @@ export const router = createBrowserRouter([
   {
     path: '/auditor/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['auditor', 'super_admin']}>
         <AppShell>
           <AuditorDashboard />
         </AppShell>
@@ -157,7 +160,7 @@ export const router = createBrowserRouter([
   {
     path: '/integrations/dashboard',
     element: (
-      <ProtectedRoute>
+      <ProtectedRoute allowedRoles={['integration_admin', 'business_admin', 'super_admin']}>
         <AppShell>
           <IntegrationAdminDashboard />
         </AppShell>
