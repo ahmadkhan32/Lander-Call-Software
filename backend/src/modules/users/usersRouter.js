@@ -190,4 +190,111 @@ router.post('/:id/roles', authenticate, requirePermission('users.update'), async
   return successResponse(res, { message: `Role '${body.role_name}' assigned` });
 });
 
+// POST /api/users (register user with login, password & role)
+router.post('/', authenticate, requirePermission('users.create'), async (req, res) => {
+  const schema = z.object({
+    full_name: z.string().min(1).max(200),
+    email: z.string().email(),
+    password: z.string().min(6),
+    role_name: z.string().default('agent'),
+    phone: z.string().optional().nullable(),
+    timezone: z.string().default('UTC'),
+  });
+
+  const body = validateBody(schema, req.body, res);
+  if (!body) return;
+
+  const targetOrgId = req.user.organizationId;
+
+  // Prevent non-superadmins from creating superadmins
+  if (body.role_name === 'super_admin' && !req.user.roles?.includes('Super Admin')) {
+    return errorResponse(res, 'Unauthorized to create Super Admin account', 403);
+  }
+
+  if (!isSupabaseConfigured) {
+    const newUser = {
+      id: `usr_${Date.now()}`,
+      full_name: body.full_name,
+      email: body.email,
+      phone: body.phone,
+      status: 'active',
+      timezone: body.timezone,
+      roles: [body.role_name],
+      organization_id: targetOrgId,
+      created_at: new Date().toISOString(),
+    };
+    return successResponse(res, { user: newUser, message: `User ${body.email} registered successfully.` }, 201);
+  }
+
+  try {
+    const { default: config } = await import('../../config/index.js');
+    const { createClient: createAdminClient } = await import('@supabase/supabase-js');
+    const adminClient = createAdminClient(config.supabase.url, config.supabase.serviceRoleKey, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    // 1. Create auth user with password
+    const { data: authUser, error: authErr } = await adminClient.auth.admin.createUser({
+      email: body.email,
+      password: body.password,
+      email_confirm: true,
+      user_metadata: { full_name: body.full_name, role: body.role_name, organization_id: targetOrgId },
+    });
+
+    if (authErr) return errorResponse(res, authErr.message, 400);
+
+    // 2. Insert into profiles
+    const { data: profile, error: profErr } = await adminClient.from('profiles').insert({
+      id: authUser.user.id,
+      organization_id: targetOrgId,
+      full_name: body.full_name,
+      phone: body.phone || null,
+      timezone: body.timezone,
+      status: 'active',
+    }).select().single();
+
+    if (profErr) return handleDbError(profErr, logger, res, 'Failed to create user profile');
+
+    // 3. Resolve role and assign
+    const { data: roleRecord } = await adminClient
+      .from('roles')
+      .select('id')
+      .eq('name', body.role_name)
+      .single();
+
+    if (roleRecord) {
+      await adminClient.from('user_roles').insert({
+        user_id: authUser.user.id,
+        role_id: roleRecord.id,
+        organization_id: targetOrgId,
+        granted_by: req.user.id,
+      });
+    }
+
+    // 4. Audit Log
+    await auditRepository.log({
+      organizationId: targetOrgId,
+      actorId: req.user.id,
+      action: 'users.registered_with_credentials',
+      resourceType: 'user',
+      resourceId: authUser.user.id,
+      newValue: { email: body.email, role: body.role_name },
+      ipAddress: req.ip,
+    });
+
+    return successResponse(res, {
+      user: {
+        id: authUser.user.id,
+        email: body.email,
+        full_name: body.full_name,
+        role: body.role_name,
+      },
+      message: `User ${body.email} registered with assigned role '${body.role_name}'`,
+    }, 201);
+  } catch (err) {
+    logger.error('Error creating user:', err);
+    return errorResponse(res, 'Internal server error while creating user', 500);
+  }
+});
+
 export default router;

@@ -78,13 +78,26 @@ export function AuthProvider({ children }) {
   };
 
   const loginDemo = (role = 'super_admin') => {
+    const ROLE_NAMES = {
+      super_admin: 'Sarah Miller',
+      business_admin: 'Arthur Pendelton',
+      manager: 'Marcus Vance',
+      supervisor: 'Elena Rostova',
+      agent: 'Emily Chen',
+      crm_manager: 'Devon Miles',
+      qa_officer: 'David Ross',
+      reporting_analyst: 'Chloe Bennett',
+      auditor: 'Frank Miller',
+      integration_admin: 'Alex Rivera',
+    };
+
     const demoUser = {
       id: 'usr_demo_' + role,
-      name: role === 'agent' ? 'Emily Chen' : role === 'qa_officer' ? 'David Ross' : 'Sarah Miller',
+      name: ROLE_NAMES[role] || 'Authorized User',
       email: `${role.replace('_', '.')}@landercrm.io`,
       role,
       roleTitle: ROLE_LABELS[role] || 'Authorized User',
-      organization: 'Lander Global Enterprises',
+      organization: role === 'super_admin' ? 'Lander Global Enterprises' : 'Example Call Center',
     };
     setUser(demoUser);
     localStorage.setItem('lander_demo_user', JSON.stringify(demoUser));

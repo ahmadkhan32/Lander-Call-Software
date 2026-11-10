@@ -22,6 +22,8 @@ import { hasPermission, PERMISSIONS, ROLE_LABELS } from '../../lib/permissions';
 
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard', permission: PERMISSIONS.VIEW_DASHBOARD },
+  { label: 'Users & Passwords', icon: Users2, path: '/app/users', permission: PERMISSIONS.MANAGE_USERS },
+  { label: 'Roles & Permissions', icon: ShieldCheck, path: '/app/roles-permissions', permission: PERMISSIONS.MANAGE_ROLES_PERMISSIONS },
   { label: 'Leads CRM', icon: Users2, path: '/app/leads', badge: '12', permission: PERMISSIONS.MANAGE_LEADS },
   { label: 'Customers', icon: Building2, path: '/app/customers', permission: PERMISSIONS.VIEW_CUSTOMERS },
   { label: 'Dialer Softphone', icon: Headphones, path: '/app/dialer', pulse: true, permission: PERMISSIONS.CALL_DIALER },

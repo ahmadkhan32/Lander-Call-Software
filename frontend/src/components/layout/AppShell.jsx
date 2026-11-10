@@ -5,7 +5,7 @@ import { Topbar } from './Topbar';
 import { MobileNav } from './MobileNav';
 import { Drawer } from '../ui/Drawer';
 
-export function AppShell() {
+export function AppShell({ children }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   return (
@@ -38,7 +38,7 @@ export function AppShell() {
         {/* Main Content Area */}
         <main className="flex-1 min-w-0 overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
           <div className="mx-auto w-full max-w-[1600px]">
-            <Outlet />
+            {children || <Outlet />}
           </div>
         </main>
       </div>

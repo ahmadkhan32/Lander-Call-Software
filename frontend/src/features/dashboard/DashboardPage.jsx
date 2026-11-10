@@ -18,8 +18,38 @@ const topAgents = [
   { rank: 3, name: 'Jessica Day', role: 'SDR Team Lead', value: '$41k', calls: 310, avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80' },
 ];
 
+import { useAuth } from '../../app/providers';
+import {
+  SuperAdminDashboard,
+  BusinessAdminDashboard,
+  CallCenterManagerDashboard,
+  SupervisorDashboard,
+  AgentDashboard,
+  CrmManagerDashboard,
+  QaOfficerDashboard,
+  ReportingAnalystDashboard,
+  AuditorDashboard,
+  IntegrationAdminDashboard,
+} from './RoleDashboards';
+
 export function DashboardPage() {
+  const { user } = useAuth();
   const [filterPeriod, setFilterPeriod] = useState('quarter');
+  const [viewMode, setViewMode] = useState('auto'); // 'auto' | 'global'
+
+  const currentRole = user?.role || 'super_admin';
+
+  if (viewMode === 'auto') {
+    if (currentRole === 'agent') return <AgentDashboard />;
+    if (currentRole === 'manager') return <CallCenterManagerDashboard />;
+    if (currentRole === 'supervisor') return <SupervisorDashboard />;
+    if (currentRole === 'crm_manager') return <CrmManagerDashboard />;
+    if (currentRole === 'qa_officer') return <QaOfficerDashboard />;
+    if (currentRole === 'reporting_analyst') return <ReportingAnalystDashboard />;
+    if (currentRole === 'auditor') return <AuditorDashboard />;
+    if (currentRole === 'integration_admin') return <IntegrationAdminDashboard />;
+    if (currentRole === 'business_admin') return <BusinessAdminDashboard />;
+  }
 
   return (
     <div className="space-y-6">

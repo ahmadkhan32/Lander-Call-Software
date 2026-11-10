@@ -3,28 +3,67 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../app/providers';
 import { Input } from '../../components/ui/Input';
 import { Button } from '../../components/ui/Button';
-import { Eye, EyeOff, ShieldCheck, Zap, Lock, Headphones, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ShieldCheck, Zap, Lock, Headphones, ArrowRight, Shield, ChevronDown } from 'lucide-react';
+import { ROLE_LABELS, ROLE_DASHBOARD_ROUTES } from '../../lib/permissions';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [selectedDemoRole, setSelectedDemoRole] = useState('super_admin');
   const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    await login(email, password);
+    const res = await login(email, password);
     setLoading(false);
-    navigate('/app/dashboard');
+
+    // Identify role destination
+    const assignedRole = email.includes('super')
+      ? 'super_admin'
+      : email.includes('admin')
+      ? 'business_admin'
+      : email.includes('manager')
+      ? 'manager'
+      : email.includes('supervisor')
+      ? 'supervisor'
+      : email.includes('crm')
+      ? 'crm_manager'
+      : email.includes('qa')
+      ? 'qa_officer'
+      : email.includes('report')
+      ? 'reporting_analyst'
+      : email.includes('audit')
+      ? 'auditor'
+      : email.includes('integration')
+      ? 'integration_admin'
+      : 'agent';
+
+    const targetRoute = ROLE_DASHBOARD_ROUTES[assignedRole] || '/app/dashboard';
+    navigate(targetRoute);
   };
 
-  const handleDemo = (role = 'super_admin') => {
+  const handleDemo = (role) => {
     loginDemo(role);
-    navigate('/app/dashboard');
+    const targetRoute = ROLE_DASHBOARD_ROUTES[role] || '/app/dashboard';
+    navigate(targetRoute);
   };
+
+  const demoRoles = [
+    { key: 'super_admin', label: 'Super Admin', route: '/super-admin/dashboard' },
+    { key: 'business_admin', label: 'Business Admin', route: '/admin/dashboard' },
+    { key: 'manager', label: 'Call Center Manager', route: '/manager/dashboard' },
+    { key: 'supervisor', label: 'Supervisor / Team Leader', route: '/supervisor/dashboard' },
+    { key: 'agent', label: 'Call Center Agent', route: '/agent/dashboard' },
+    { key: 'crm_manager', label: 'CRM / Lead Manager', route: '/crm/dashboard' },
+    { key: 'qa_officer', label: 'QA Officer', route: '/qa/dashboard' },
+    { key: 'reporting_analyst', label: 'Reporting Analyst', route: '/reports/dashboard' },
+    { key: 'auditor', label: 'Auditor', route: '/auditor/dashboard' },
+    { key: 'integration_admin', label: 'Integration Admin', route: '/integrations/dashboard' },
+  ];
 
   return (
     <div className="grid min-h-screen bg-white lg:grid-cols-2">
@@ -44,15 +83,15 @@ export function LoginPage() {
           <div className="mt-8">
             <span className="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-3.5 py-1.5 text-xs font-semibold text-blue-300">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              SOC 2 Type II Certified & HIPAA Ready
+              Multi-Level Role-Based Access Control (RBAC)
             </span>
           </div>
 
           <h2 className="mt-8 text-4xl font-extrabold leading-tight tracking-tight">
-            Next-Gen Call Center CRM & Operations
+            Enterprise Call Center CRM &amp; Multi-Tenant Platform
           </h2>
           <p className="mt-4 text-base text-slate-300 max-w-md leading-relaxed">
-            Unify high-velocity telephony, customer relationship management, automated follow-up cadences, and real-time agent telemetry in one workspace.
+            Role-based segregation across 10 distinct roles with dedicated dashboards, centralized administrative account provisioning, and row-level tenant security.
           </p>
         </div>
 
@@ -60,29 +99,29 @@ export function LoginPage() {
         <div className="relative z-10 grid grid-cols-2 gap-4 mt-12">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-white font-semibold text-sm">
-              <Zap className="w-4 h-4 text-amber-400" />
-              99.99% Uptime SLA
+              <Shield className="w-4 h-4 text-emerald-400" />
+              10 Isolated Roles
             </div>
-            <p className="text-xs text-slate-400 mt-1">Carrier-grade SIP trunking & auto-failover</p>
+            <p className="text-xs text-slate-400 mt-1">Super Admin, Business Admin, Agent, QA &amp; more</p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm">
             <div className="flex items-center gap-2 text-white font-semibold text-sm">
               <Headphones className="w-4 h-4 text-blue-400" />
-              WebRTC Softphone
+              Predictive Dialer
             </div>
-            <p className="text-xs text-slate-400 mt-1">&lt;50ms audio latency with DTMF keypad</p>
+            <p className="text-xs text-slate-400 mt-1">Live softphone, barge-in &amp; call recordings</p>
           </div>
         </div>
 
         <div className="relative z-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
           <span>&copy; {new Date().getFullYear()} Lander CRM Inc.</span>
-          <span>Security &bull; Privacy &bull; Terms</span>
+          <span>SOC 2 Type II &bull; HIPAA Ready</span>
         </div>
       </aside>
 
       {/* Right panel: Login Form */}
       <section className="flex min-h-screen items-center justify-center px-6 py-12 sm:px-10 lg:px-16">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-6">
           <div className="text-center sm:text-left">
             <div className="lg:hidden inline-flex items-center gap-2.5 mb-6">
               <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand font-bold text-white text-base">
@@ -91,36 +130,48 @@ export function LoginPage() {
               <span className="text-lg font-bold tracking-wider text-navy">LANDER</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-              Sign in to your workspace
+              Sign in to LANDER CRM
             </h1>
             <p className="mt-2 text-xs sm:text-sm text-slate-500">
-              Welcome back! Please enter your authorized credentials.
+              Each user receives permissions and opens their role-specific dashboard.
             </p>
           </div>
 
-          {/* Quick Demo Login Button */}
-          <div className="rounded-2xl bg-blue-50/80 border border-blue-200/80 p-4">
-            <div className="flex items-center justify-between gap-3">
+          {/* Quick Demo Login Role Selector */}
+          <div className="rounded-2xl bg-blue-50/80 border border-blue-200/80 p-4 space-y-3">
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold text-blue-900">Instant Demo Access</p>
-                <p className="text-[11px] text-blue-700 mt-0.5">Explore with pre-seeded CRM data</p>
+                <p className="text-xs font-bold text-blue-900">Instant Demo Login &bull; 10 Roles</p>
+                <p className="text-[11px] text-blue-700">Test any dashboard immediately</p>
               </div>
               <Button
                 variant="primary"
                 size="sm"
-                onClick={() => handleDemo('super_admin')}
+                onClick={() => handleDemo(selectedDemoRole)}
                 className="bg-blue-600 hover:bg-blue-700 text-xs shrink-0 shadow-sm"
               >
-                ⚡ Quick Demo Login
+                Launch Role &rarr;
               </Button>
             </div>
+
+            <select
+              value={selectedDemoRole}
+              onChange={(e) => setSelectedDemoRole(e.target.value)}
+              className="w-full rounded-xl border border-blue-300 bg-white px-3 py-2 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand"
+            >
+              {demoRoles.map((r) => (
+                <option key={r.key} value={r.key}>
+                  {r.label} ({r.route})
+                </option>
+              ))}
+            </select>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Work Email"
+              label="Login Email"
               type="email"
-              placeholder="sarah.miller@landercrm.io"
+              placeholder="e.g. sarah.miller@landercrm.io"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
@@ -167,12 +218,12 @@ export function LoginPage() {
               className="w-full font-semibold shadow-sm mt-2"
               isLoading={loading}
             >
-              Sign In to CRM <ArrowRight className="w-4 h-4 ml-1" />
+              Sign In to Role Dashboard <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
           </form>
 
           <p className="text-center text-xs text-slate-500">
-            Protected by end-to-end multi-tenant row level security.
+            Protected by multi-tenant RBAC &amp; Supabase Row Level Security.
           </p>
         </div>
       </section>

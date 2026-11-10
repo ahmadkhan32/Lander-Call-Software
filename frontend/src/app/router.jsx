@@ -16,6 +16,20 @@ import { DialerPage } from '../features/dialer/DialerPage';
 import { CallsPage } from '../features/calls/CallsPage';
 import { CampaignsPage, FollowUpsPage } from '../features/campaigns/CampaignPages';
 import { QAPage, ReportsPage, SettingsPage } from '../features/settings/OperationalPages';
+import { RolesPermissionsPage } from '../features/settings/RolesPermissionsPage';
+import { UserManagementPage } from '../features/settings/UserManagementPage';
+import {
+  SuperAdminDashboard,
+  BusinessAdminDashboard,
+  CallCenterManagerDashboard,
+  SupervisorDashboard,
+  AgentDashboard,
+  CrmManagerDashboard,
+  QaOfficerDashboard,
+  ReportingAnalystDashboard,
+  AuditorDashboard,
+  IntegrationAdminDashboard,
+} from '../features/dashboard/RoleDashboards';
 import { useAuth } from './providers';
 
 function ProtectedRoute({ children }) {
@@ -49,6 +63,108 @@ export const router = createBrowserRouter([
     element: <AuthCallbackPage />,
   },
 
+  // Dedicated Direct Role Dashboards (Section 2) wrapped in AppShell & ProtectedRoute
+  {
+    path: '/super-admin/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <SuperAdminDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <BusinessAdminDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/manager/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <CallCenterManagerDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/supervisor/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <SupervisorDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/agent/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <AgentDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/crm/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <CrmManagerDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/qa/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <QaOfficerDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/reports/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <ReportingAnalystDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/auditor/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <AuditorDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/integrations/dashboard',
+    element: (
+      <ProtectedRoute>
+        <AppShell>
+          <IntegrationAdminDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+
   // Protected Application Routes wrapped in AppShell
   {
     path: '/app',
@@ -65,6 +181,20 @@ export const router = createBrowserRouter([
       {
         path: 'dashboard',
         element: <DashboardPage />,
+      },
+      // Section 4 Dedicated Permissions Management Screen
+      {
+        path: 'roles-permissions',
+        element: <RolesPermissionsPage />,
+      },
+      // User Management & Password Handover Screen
+      {
+        path: 'users',
+        element: <UserManagementPage />,
+      },
+      {
+        path: 'users/create',
+        element: <UserManagementPage />,
       },
       {
         path: 'leads',
@@ -115,12 +245,8 @@ export const router = createBrowserRouter([
         element: <LeadsPage />,
       },
       {
-        path: 'users',
-        element: <SettingsPage />,
-      },
-      {
         path: 'roles',
-        element: <SettingsPage />,
+        element: <RolesPermissionsPage />,
       },
       {
         path: 'organization',
@@ -128,7 +254,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'audit-logs',
-        element: <CallsPage />,
+        element: <AuditorDashboard />,
       },
       {
         path: 'notifications',
@@ -136,7 +262,7 @@ export const router = createBrowserRouter([
       },
       {
         path: 'integrations',
-        element: <SettingsPage />,
+        element: <IntegrationAdminDashboard />,
       },
       {
         path: 'settings',
