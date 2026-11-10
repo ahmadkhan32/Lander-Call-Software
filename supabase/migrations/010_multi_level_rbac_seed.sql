@@ -85,3 +85,4 @@ CREATE POLICY "Org admins can manage invitations"
       SELECT organization_id FROM public.profiles WHERE id = auth.uid()
     )
   );
+
