@@ -52,8 +52,11 @@ export function LoginPage() {
       const result = await login(email, password);
 
       if (result?.success) {
-        // If redirected from a protected route and role matches, navigate there; otherwise go to role dashboard
-        const destination = redirectedFrom || result.redirectTo || ROLE_DASHBOARD_ROUTES[result.user?.role] || '/app/dashboard';
+        // Direct every role to their assigned dashboard unless specifically navigating to a permitted /app/* sub-page
+        let destination = result.redirectTo || ROLE_DASHBOARD_ROUTES[result.user?.role] || '/app/dashboard';
+        if (redirectedFrom && redirectedFrom.startsWith('/app/') && redirectedFrom !== '/app/dashboard') {
+          destination = redirectedFrom;
+        }
         navigate(destination, { replace: true });
       } else {
         setLoginError(result?.error || 'Invalid email or password. Please verify your credentials.');

@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users2,
@@ -44,13 +44,19 @@ const allNavItems = [
 
 export function Sidebar({ onClose }) {
   const { user, logout } = useAuth();
+  const location = useLocation();
   const userRole = user?.role || 'super_admin';
 
-  const visibleNav = allNavItems.filter((item) =>
-    hasPermission(userRole, item.permission)
-  );
-
   const roleDashboardRoute = ROLE_DASHBOARD_ROUTES?.[userRole] || '/app/dashboard';
+
+  const visibleNav = allNavItems
+    .filter((item) => hasPermission(userRole, item.permission))
+    .map((item) => {
+      if (item.label === 'Dashboard') {
+        return { ...item, path: roleDashboardRoute };
+      }
+      return item;
+    });
 
   const handleLogout = async () => {
     await logout();
@@ -90,14 +96,15 @@ export function Sidebar({ onClose }) {
                 key={item.path}
                 to={item.path}
                 onClick={onClose}
-                className={({ isActive }) =>
-                  cn(
+                className={({ isActive }) => {
+                  const isDashboardActive = item.label === 'Dashboard' && (location.pathname === '/app/dashboard' || location.pathname === roleDashboardRoute);
+                  return cn(
                     'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
-                    isActive
+                    isActive || isDashboardActive
                       ? 'bg-brand text-white shadow-sm'
                       : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
-                  )
-                }
+                  );
+                }}
               >
                 <div className="flex items-center gap-3">
                   <Icon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-white" />

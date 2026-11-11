@@ -49,6 +49,7 @@ export function DashboardPage() {
     if (currentRole === 'auditor') return <AuditorDashboard />;
     if (currentRole === 'integration_admin') return <IntegrationAdminDashboard />;
     if (currentRole === 'business_admin') return <BusinessAdminDashboard />;
+    if (currentRole === 'super_admin') return <SuperAdminDashboard />;
   }
 
   return (

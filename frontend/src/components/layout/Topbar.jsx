@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, Bell, HelpCircle, Menu, ChevronDown, Shield, Check } from 'lucide-react';
 import { useAuth } from '../../app/providers';
 import { ROLE_LABELS } from '../../lib/permissions';
 
 export function Topbar({ onMenuClick }) {
   const { user, switchRole } = useAuth();
+  const navigate = useNavigate();
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const currentRole = user?.role || 'super_admin';
 
@@ -65,8 +67,11 @@ export function Topbar({ onMenuClick }) {
                       key={roleKey}
                       type="button"
                       onClick={() => {
-                        switchRole(roleKey);
+                        const target = switchRole(roleKey);
                         setRoleMenuOpen(false);
+                        if (target) {
+                          navigate(target);
+                        }
                       }}
                       className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-lg text-left transition ${
                         isSelected
