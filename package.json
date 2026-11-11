@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Lander Call Center CRM & Operations Platform (Vite + React + Express + Supabase)",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
     "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true,force:true}); if(fs.existsSync('frontend/dist')) fs.cpSync('frontend/dist', 'dist', {recursive:true});\"",
