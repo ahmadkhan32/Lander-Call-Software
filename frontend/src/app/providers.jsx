@@ -5,7 +5,9 @@ import { ROLE_LABELS, ROLE_DASHBOARD_ROUTES } from '../lib/permissions';
 
 const AuthContext = createContext(null);
 
-/** Fetch the user's profile + roles + permissions from the backend /api/auth/me */
+const STORAGE_KEY = 'lander_auth_session';
+
+/** Fetch the user's trusted profile + roles + permissions from backend /api/auth/me */
 async function fetchUserProfile(accessToken) {
   try {
     const apiBase = import.meta.env.VITE_API_URL || '';
@@ -21,33 +23,32 @@ async function fetchUserProfile(accessToken) {
 }
 
 export function AuthProvider({ children }) {
+  // FR-17 & FR-18: Mandatory individual authentication.
+  // Initial state is strictly null unless a valid verified session exists.
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('lander_demo_user');
-    if (saved) {
-      try { return JSON.parse(saved); } catch { return null; }
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email && parsed.role && parsed.accessToken) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Corrupt state — reset
+      localStorage.removeItem(STORAGE_KEY);
     }
-    // Default super-admin for first visit (demo mode)
-    return {
-      id: 'usr_superadmin_01',
-      name: 'Sarah Miller',
-      email: 'sarah.miller@landercrm.io',
-      role: 'super_admin',
-      roles: ['super_admin'],
-      roleTitle: 'Super Admin',
-      organization: 'Lander Global Enterprises',
-      organization_id: '00000000-0000-0000-0000-000000000001',
-      permissions: [],
-      accessToken: 'demo-superadmin-token',
-    };
+    return null;
   });
+
   const [loading, setLoading] = useState(false);
 
-  /** Build a normalized user object from Supabase session + backend profile */
+  /** Build a normalized user object from Supabase session + trusted backend profile */
   const buildUserFromSession = useCallback(async (session) => {
     if (!session?.user) return null;
     const accessToken = session.access_token;
 
-    // Try backend /api/auth/me for roles & permissions
+    // Verify profile and assigned roles from server
     const profile = await fetchUserProfile(accessToken);
     const roles = profile?.roles || ['agent'];
     const primaryRole = roles[0] || 'agent';
@@ -62,32 +63,36 @@ export function AuthProvider({ children }) {
       organization: profile?.organization_id || null,
       organization_id: profile?.organization_id || null,
       permissions: profile?.permissions || [],
+      status: profile?.status || 'active',
       accessToken,
     };
   }, []);
 
-  // Listen to Supabase auth state changes (real auth)
+  // Sync with Supabase session on startup and token changes
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         const u = await buildUserFromSession(session);
         if (u) {
           setUser(u);
-          localStorage.setItem('lander_demo_user', JSON.stringify(u));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
+        } else {
+          setUser(null);
+          localStorage.removeItem(STORAGE_KEY);
         }
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
         const u = await buildUserFromSession(session);
         if (u) {
           setUser(u);
-          localStorage.setItem('lander_demo_user', JSON.stringify(u));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(u));
         }
-      } else if (_event === 'SIGNED_OUT') {
+      } else if (event === 'SIGNED_OUT' || !session) {
         setUser(null);
-        localStorage.removeItem('lander_demo_user');
+        localStorage.removeItem(STORAGE_KEY);
       }
     });
 
@@ -96,184 +101,136 @@ export function AuthProvider({ children }) {
 
   /**
    * login(email, password)
-   * First tries the backend API, then falls back to Supabase direct, then demo mode.
+   * Mandatory individual credentials check via backend /api/auth/login.
+   * Supabase Auth verifies password. Server loads organization, role, and permissions.
    */
   const login = async (email, password) => {
     setLoading(true);
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
 
-      // 1. Try backend API login (gets role-aware redirect)
-      try {
-        const res = await fetch(`${apiBase}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password }),
-        });
-        if (res.ok) {
-          const json = await res.json();
-          const { user: userPayload, token, redirectTo } = json.data;
-          const normalizedUser = {
-            id: userPayload.id,
-            email: userPayload.email,
-            name: userPayload.full_name || email.split('@')[0],
-            role: userPayload.roles?.[0] || 'agent',
-            roles: userPayload.roles || ['agent'],
-            roleTitle: ROLE_LABELS[userPayload.roles?.[0]] || 'User',
-            organization: userPayload.organization_id,
-            organization_id: userPayload.organization_id,
-            permissions: userPayload.permissions || [],
-            accessToken: token,
-          };
-          setUser(normalizedUser);
-          localStorage.setItem('lander_demo_user', JSON.stringify(normalizedUser));
-          return { success: true, redirectTo: redirectTo || ROLE_DASHBOARD_ROUTES[normalizedUser.role] || '/app/dashboard' };
-        }
-      } catch {
-        // Backend not reachable – fall through
+      // 1. Authenticate with backend API
+      const res = await fetch(`${apiBase}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        const errorMessage = json.error || 'Authentication failed. Please verify your credentials.';
+        return { success: false, error: errorMessage };
       }
 
-      // 2. Try Supabase direct auth
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      if (!error && data?.session) {
-        const u = await buildUserFromSession(data.session);
-        if (u) {
-          setUser(u);
-          localStorage.setItem('lander_demo_user', JSON.stringify(u));
-          return { success: true, redirectTo: ROLE_DASHBOARD_ROUTES[u.role] || '/app/dashboard' };
-        }
+      const { user: userPayload, token, redirectTo } = json.data;
+
+      // Verify account status
+      if (userPayload.status && userPayload.status !== 'active') {
+        return { success: false, error: 'Your account has been deactivated. Please contact your administrator.' };
       }
 
-      // 3. Demo fallback: derive role from email keywords
-      const lowerEmail = email.toLowerCase();
-      const demoRole =
-        lowerEmail.includes('super') || lowerEmail.includes('platform') ? 'super_admin'
-        : lowerEmail.includes('admin') || lowerEmail.includes('business') ? 'business_admin'
-        : lowerEmail.includes('manager') ? 'manager'
-        : lowerEmail.includes('supervisor') ? 'supervisor'
-        : lowerEmail.includes('crm') ? 'crm_manager'
-        : lowerEmail.includes('qa') ? 'qa_officer'
-        : lowerEmail.includes('report') ? 'reporting_analyst'
-        : lowerEmail.includes('audit') ? 'auditor'
-        : lowerEmail.includes('integration') ? 'integration_admin'
-        : 'agent';
-
-      const demoUser = {
-        id: `usr_demo_${Date.now()}`,
-        name: email.split('@')[0].replace(/[._]/g, ' '),
-        email,
-        role: demoRole,
-        roles: [demoRole],
-        roleTitle: ROLE_LABELS[demoRole] || 'User',
-        organization: 'Lander Call Center CRM',
-        organization_id: '00000000-0000-0000-0000-000000000001',
-        permissions: [],
-        accessToken: `demo-${demoRole}-token`,
+      const primaryRole = userPayload.roles?.[0] || 'agent';
+      const normalizedUser = {
+        id: userPayload.id,
+        email: userPayload.email,
+        name: userPayload.full_name || email.split('@')[0],
+        role: primaryRole,
+        roles: userPayload.roles || [primaryRole],
+        roleTitle: ROLE_LABELS[primaryRole] || 'User',
+        organization: userPayload.organization_id,
+        organization_id: userPayload.organization_id,
+        permissions: userPayload.permissions || [],
+        status: userPayload.status || 'active',
+        accessToken: token,
       };
-      setUser(demoUser);
-      localStorage.setItem('lander_demo_user', JSON.stringify(demoUser));
-      return { success: true, redirectTo: ROLE_DASHBOARD_ROUTES[demoRole] || '/app/dashboard' };
+
+      setUser(normalizedUser);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+
+      return {
+        success: true,
+        redirectTo: redirectTo || ROLE_DASHBOARD_ROUTES[primaryRole] || '/app/dashboard',
+        user: normalizedUser,
+      };
+    } catch (err) {
+      console.error('Login error:', err);
+      return { success: false, error: 'Unable to connect to authentication server. Please try again.' };
     } finally {
       setLoading(false);
     }
   };
 
   /**
-   * loginDemo(role) – Switch to any role instantly for demonstration.
-   * Backend verifies every role; this is UI-only demo switching.
-   */
-  const loginDemo = (role = 'super_admin') => {
-    const DEMO_NAMES = {
-      super_admin: 'Sarah Miller',
-      business_admin: 'Arthur Pendelton',
-      manager: 'Marcus Vance',
-      supervisor: 'Elena Rostova',
-      agent: 'Emily Chen',
-      crm_manager: 'Devon Miles',
-      qa_officer: 'David Ross',
-      reporting_analyst: 'Chloe Bennett',
-      auditor: 'Frank Miller',
-      integration_admin: 'Alex Rivera',
-    };
-
-    const demoUser = {
-      id: `usr_demo_${role}`,
-      name: DEMO_NAMES[role] || 'Demo User',
-      email: `${role.replace(/_/g, '.')}@landercrm.io`,
-      role,
-      roles: [role],
-      roleTitle: ROLE_LABELS[role] || role,
-      organization: role === 'super_admin' ? 'Lander Global Enterprises' : 'Example Call Center',
-      organization_id: role === 'super_admin'
-        ? '00000000-0000-0000-0000-000000000000'
-        : '00000000-0000-0000-0000-000000000001',
-      permissions: [],
-      accessToken: `demo-${role}-token`,
-    };
-    setUser(demoUser);
-    localStorage.setItem('lander_demo_user', JSON.stringify(demoUser));
-    return ROLE_DASHBOARD_ROUTES[role] || '/app/dashboard';
-  };
-
-  /**
-   * switchRole(newRole) – For multi-role users to switch active role context.
-   * Backend still enforces permissions per role.
+   * switchRole(newRole)
+   * Only permits switching among explicitly assigned and authorized roles (FR-19).
    */
   const switchRole = (newRole) => {
     if (!user) return;
+    const isAuthorized = user.role === 'super_admin' || user.roles?.includes(newRole);
+    if (!isAuthorized) {
+      console.warn(`Denied unauthorized role change attempt to: ${newRole}`);
+      return;
+    }
     const updated = {
       ...user,
       role: newRole,
       roleTitle: ROLE_LABELS[newRole] || newRole,
     };
     setUser(updated);
-    localStorage.setItem('lander_demo_user', JSON.stringify(updated));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
     return ROLE_DASHBOARD_ROUTES[newRole] || '/app/dashboard';
   };
 
+  /**
+   * logout()
+   * FR-20: Invalidate session on server and clear local state immediately.
+   */
   const logout = async () => {
     setLoading(true);
     try {
-      // Try backend logout
       if (user?.accessToken) {
         const apiBase = import.meta.env.VITE_API_URL || '';
-        fetch(`${apiBase}/api/auth/logout`, {
+        await fetch(`${apiBase}/api/auth/logout`, {
           method: 'POST',
           headers: { Authorization: `Bearer ${user.accessToken}` },
         }).catch(() => {});
       }
       await supabase.auth.signOut().catch(() => {});
     } finally {
+      localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem('lander_demo_user');
       setUser(null);
       setLoading(false);
     }
   };
 
-  /** hasPermission(permKey) – Check if current user has a specific permission */
+  /** Check if current user has permission key */
   const hasPermission = (permKey) => {
     if (!user) return false;
     if (user.role === 'super_admin') return true;
     return user.permissions?.includes(permKey) || false;
   };
 
-  /** hasRole(...roles) – Check if user has one of the given roles */
+  /** Check if current user holds one of the specified roles */
   const hasRole = (...roles) => {
     if (!user) return false;
+    if (user.role === 'super_admin') return true;
     return roles.includes(user.role);
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      loading,
-      login,
-      loginDemo,
-      switchRole,
-      logout,
-      hasPermission,
-      hasRole,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        switchRole,
+        logout,
+        hasPermission,
+        hasRole,
+      }}
+    >
       <ToastProvider>
         {children}
       </ToastProvider>

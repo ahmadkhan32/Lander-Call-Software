@@ -69,6 +69,10 @@ Modular monolith with:
 | FR-14 | In-app, email, and SMS notifications | Should |
 | FR-15 | Data integrity: FK, constraints, transactions, migrations | Must |
 | FR-16 | Idempotent webhook processing with deduplication | Must |
+| FR-17 | Individual Account Authentication: Every user must authenticate using their own unique credentials before accessing any application dashboard. No shared accounts or unauthenticated bypasses. | Must |
+| FR-18 | Universal Dashboard Protection: All dashboards (/super-admin/dashboard, /admin/dashboard, /agent/dashboard, etc.), protected routes, API endpoints and sensitive resources must reject unauthenticated requests, redirecting to login. | Must |
+| FR-19 | Strict Role Authorization: Users may access only their explicitly assigned roles, permissions and organization resources. Role switching must not bypass authentication or authorization. Unauthorized attempts redirect to /unauthorized (403). | Must |
+| FR-20 | Session and Account Security: Expired, revoked or deactivated accounts must not retain access to protected resources. Immediate session invalidation on logout. | Must |
 
 ---
 
@@ -85,6 +89,7 @@ Modular monolith with:
 | NFR-07 | Accessibility | WCAG 2.2 AA for core workflows |
 | NFR-08 | Maintainability | Modular code, documented APIs, automated tests |
 | NFR-09 | Code standard | JS/JSX only, ESLint, consistent naming |
+| NFR-17 | Authentication Security | Authentication and authorization must be verified server-side and reinforced through Supabase RLS, with automated tests for every role and protected route. |
 
 ---
 

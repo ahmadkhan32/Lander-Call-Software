@@ -39,8 +39,20 @@ export const ROLE_DASHBOARD_ROUTES = {
   integration_admin: '/integrations/dashboard',
 };
 
-// Granular Permission Keys matching LANDER CRM specification Section 7
+// Granular Permission Keys matching LANDER CRM specification
 export const PERMISSION_KEYS = {
+  DASHBOARDS: {
+    PLATFORM: 'platform.dashboard.read',
+    ORGANIZATION: 'organization.dashboard.read',
+    MANAGER: 'manager.dashboard.read',
+    SUPERVISOR: 'supervisor.dashboard.read',
+    AGENT: 'agent.dashboard.read',
+    CRM: 'crm.dashboard.read',
+    QA: 'qa.dashboard.read',
+    REPORTS: 'reports.dashboard.read',
+    AUDITOR: 'auditor.dashboard.read',
+    INTEGRATIONS: 'integrations.dashboard.read',
+  },
   ORGANIZATIONS: {
     CREATE: 'organizations.create',
     READ: 'organizations.read',
@@ -83,6 +95,18 @@ export const PERMISSION_KEYS = {
 
 // Module-level RBAC role access matrix
 export const PERMISSIONS = {
+  // Dashboards
+  VIEW_SUPER_ADMIN_DASHBOARD: ['super_admin'],
+  VIEW_BUSINESS_ADMIN_DASHBOARD: ['business_admin', 'super_admin'],
+  VIEW_MANAGER_DASHBOARD: ['manager', 'business_admin', 'super_admin'],
+  VIEW_SUPERVISOR_DASHBOARD: ['supervisor', 'manager', 'business_admin', 'super_admin'],
+  VIEW_AGENT_DASHBOARD: ['agent', 'supervisor', 'manager', 'business_admin', 'super_admin'],
+  VIEW_CRM_DASHBOARD: ['crm_manager', 'business_admin', 'super_admin'],
+  VIEW_QA_DASHBOARD: ['qa_officer', 'business_admin', 'super_admin'],
+  VIEW_REPORTS_DASHBOARD: ['reporting_analyst', 'manager', 'business_admin', 'super_admin'],
+  VIEW_AUDITOR_DASHBOARD: ['auditor', 'super_admin'],
+  VIEW_INTEGRATIONS_DASHBOARD: ['integration_admin', 'business_admin', 'super_admin'],
+
   VIEW_DASHBOARD: [
     'super_admin',
     'business_admin',

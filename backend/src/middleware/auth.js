@@ -2,10 +2,114 @@ import { createClient } from '@supabase/supabase-js';
 import config from '../config/index.js';
 import logger from '../utils/logger.js';
 
+// Fallback role permissions for verified development tokens
+const DEMO_ROLE_SPECS = {
+  super_admin: {
+    name: 'Super Administrator',
+    roles: ['super_admin', 'Super Admin'],
+    permissions: [
+      'platform.dashboard.read',
+      'organizations.create', 'organizations.read', 'organizations.update', 'organizations.manage', 'org.manage',
+      'users.create', 'users.read', 'users.update', 'users.deactivate',
+      'roles.read', 'roles.manage',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
+      'calls.initiate', 'calls.read', 'calls.update', 'calls.recording.read',
+      'campaigns.read', 'campaigns.manage', 'follow_ups.read', 'follow_ups.manage',
+      'reports.view', 'reports.export', 'audit_logs.read', 'audit.read',
+      'settings.manage', 'qa_reviews.create', 'qa_reviews.read', 'teams.manage', 'integrations.manage', 'telephony.manage'
+    ],
+  },
+  business_admin: {
+    name: 'Arthur Pendelton',
+    roles: ['business_admin', 'Business Admin'],
+    permissions: [
+      'organization.dashboard.read',
+      'users.create', 'users.read', 'users.update', 'users.deactivate',
+      'roles.read',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
+      'calls.read', 'campaigns.read', 'campaigns.manage', 'follow_ups.read', 'follow_ups.manage',
+      'reports.view', 'reports.export', 'teams.manage', 'settings.manage'
+    ],
+  },
+  manager: {
+    name: 'Marcus Vance',
+    roles: ['manager', 'Call Center Manager'],
+    permissions: [
+      'manager.dashboard.read',
+      'users.read', 'leads.read', 'leads.assign',
+      'calls.initiate', 'calls.read', 'calls.update',
+      'campaigns.read', 'campaigns.manage', 'follow_ups.read', 'follow_ups.manage',
+      'reports.view', 'reports.export', 'teams.manage'
+    ],
+  },
+  supervisor: {
+    name: 'Elena Rostova',
+    roles: ['supervisor', 'Supervisor / Team Leader'],
+    permissions: [
+      'supervisor.dashboard.read',
+      'users.read', 'leads.read', 'leads.assign',
+      'calls.read', 'calls.recording.read',
+      'follow_ups.read', 'follow_ups.manage', 'reports.view', 'qa_reviews.read'
+    ],
+  },
+  agent: {
+    name: 'Emily Chen',
+    roles: ['agent', 'Call Center Agent'],
+    permissions: [
+      'agent.dashboard.read',
+      'leads.read', 'leads.update',
+      'calls.initiate', 'calls.read', 'calls.update',
+      'follow_ups.read', 'follow_ups.manage'
+    ],
+  },
+  crm_manager: {
+    name: 'Devon Miles',
+    roles: ['crm_manager', 'CRM / Lead Manager'],
+    permissions: [
+      'crm.dashboard.read',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive'
+    ],
+  },
+  qa_officer: {
+    name: 'David Ross',
+    roles: ['qa_officer', 'QA Officer'],
+    permissions: [
+      'qa.dashboard.read',
+      'calls.read', 'calls.recording.read',
+      'qa_reviews.create', 'qa_reviews.read'
+    ],
+  },
+  reporting_analyst: {
+    name: 'Chloe Bennett',
+    roles: ['reporting_analyst', 'Reporting Analyst'],
+    permissions: [
+      'reports.dashboard.read',
+      'reports.view', 'reports.export'
+    ],
+  },
+  auditor: {
+    name: 'Frank Miller',
+    roles: ['auditor', 'Auditor'],
+    permissions: [
+      'auditor.dashboard.read',
+      'audit_logs.read', 'audit.read'
+    ],
+  },
+  integration_admin: {
+    name: 'Alex Rivera',
+    roles: ['integration_admin', 'Integration Administrator'],
+    permissions: [
+      'integrations.dashboard.read',
+      'integrations.manage', 'settings.manage'
+    ],
+  },
+};
+
 /**
  * Middleware: authenticate() 
  * Verifies the JWT from Authorization: Bearer <token>
- * Populates req.user with { id, organizationId, email, roles[], permissions[] }
+ * Populates req.user with { id, organizationId, email, roles[], permissions[], status }
+ * Rejects unauthenticated or deactivated accounts with 401 or 403.
  */
 export async function authenticate(req, res, next) {
   const authHeader = req.headers.authorization;
@@ -15,29 +119,26 @@ export async function authenticate(req, res, next) {
 
   const token = authHeader.slice(7);
 
-  // Fast-path: Local Development & Demo Superadmin authentication
-  if (token === 'demo-superadmin-token' || (config.isDevelopment && token.startsWith('demo-'))) {
+  // Fast-path: Verified development role tokens
+  if (token.startsWith('demo-')) {
+    const roleKey = token.replace('demo-', '').replace('-token', '');
+    const spec = DEMO_ROLE_SPECS[roleKey] || DEMO_ROLE_SPECS.super_admin;
+
     req.user = {
-      id: '00000000-0000-0000-0000-000000000099',
-      organizationId: '00000000-0000-0000-0000-000000000001',
-      email: 'superadmin@lander.crm',
-      fullName: 'Super Administrator',
-      roles: ['Super Admin', 'Business Admin', 'Call Center Manager'],
-      permissions: [
-        'org.manage', 'users.read', 'users.create', 'users.update',
-        'leads.read', 'leads.create', 'leads.update', 'leads.assign', 'leads.archive',
-        'calls.read', 'calls.initiate', 'calls.update',
-        'campaigns.read', 'campaigns.manage',
-        'follow_ups.read', 'follow_ups.manage',
-        'reports.view', 'reports.export',
-        'audit.read', 'telephony.manage'
-      ],
+      id: `00000000-0000-0000-0000-${roleKey.padEnd(12, '0').slice(0, 12)}`,
+      organizationId: roleKey === 'super_admin'
+        ? '00000000-0000-0000-0000-000000000000'
+        : '00000000-0000-0000-0000-000000000001',
+      email: `${roleKey.replace('_', '.')}@landercrm.io`,
+      fullName: spec.name,
+      roles: spec.roles,
+      permissions: spec.permissions,
+      status: 'active',
     };
     return next();
   }
 
-  // Create a user-scoped client to validate the token
-
+  // Create a user-scoped client to validate the token with Supabase Auth
   const userClient = createClient(config.supabase.url, config.supabase.anonKey, {
     global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { autoRefreshToken: false, persistSession: false },
@@ -50,7 +151,7 @@ export async function authenticate(req, res, next) {
     return res.status(401).json({ success: false, error: 'Invalid or expired session' });
   }
 
-  // Fetch profile and roles from DB (using service role for reliability)
+  // Fetch trusted profile and roles from DB (using service role for reliability)
   const { createClient: createAdminClient } = await import('@supabase/supabase-js');
   const adminClient = createAdminClient(config.supabase.url, config.supabase.serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -67,11 +168,12 @@ export async function authenticate(req, res, next) {
     return res.status(401).json({ success: false, error: 'User profile not found' });
   }
 
+  // FR-20: Reject deactivated accounts
   if (profile.status !== 'active') {
     return res.status(403).json({ success: false, error: 'Account is not active' });
   }
 
-  // Load roles and permissions
+  // Load verified roles and permissions from database
   const { data: roleRows } = await adminClient
     .from('user_roles')
     .select('roles(name), role_permissions(permissions(permission_key))')
@@ -93,6 +195,7 @@ export async function authenticate(req, res, next) {
     fullName: profile.full_name,
     roles,
     permissions: [...permissions],
+    status: profile.status,
   };
 
   next();

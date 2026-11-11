@@ -14,9 +14,20 @@ export default defineConfig({
     port: 3000,
     host: true,
   },
+  esbuild: {
+    legalComments: 'none',
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    chunkSizeWarningLimit: 1200,
+    chunkSizeWarningLimit: 2000,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          lucide: ['lucide-react'],
+        },
+      },
+    },
   },
 });

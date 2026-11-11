@@ -159,6 +159,11 @@ export function ResetPasswordPage() {
 
 // ── Unauthorized Page ──────────────────────────────────────────────────────────
 export function UnauthorizedPage() {
+  const location = useLocation();
+  const state = location.state || {};
+  const isDeactivated = state.reason === 'deactivated';
+  const isRoleDenied = state.reason === 'role_denied';
+
   return (
     <div className="min-h-screen flex items-center justify-center p-6 bg-page text-center">
       <div className="max-w-md bg-white p-8 rounded-2xl border border-slate-200 shadow-panel">
@@ -168,17 +173,29 @@ export function UnauthorizedPage() {
         <span className="text-xs font-mono font-bold px-2.5 py-1 rounded-full bg-rose-100 text-rose-800">
           403 FORBIDDEN
         </span>
-        <h1 className="text-2xl font-bold text-navy mt-4">Access Restricted</h1>
+        <h1 className="text-2xl font-bold text-navy mt-4">
+          {isDeactivated ? 'Account Deactivated' : 'Access Restricted'}
+        </h1>
         <p className="mt-2 text-xs sm:text-sm text-slate-500">
-          You do not have the required role or organization permissions to view this resource.
-          Contact your organization administrator to request access.
+          {isDeactivated
+            ? 'Your account has been deactivated or suspended. Protected APIs and dashboards are no longer accessible.'
+            : isRoleDenied
+            ? `Your current role does not have authorization to access this dashboard. Each account may only open authorized dashboards.`
+            : 'You do not have the required role or organization permissions to view this resource. Contact your organization administrator.'}
         </p>
+
+        {state.from && (
+          <p className="mt-3 text-[11px] font-mono text-slate-400 bg-slate-50 py-1.5 px-3 rounded-lg border border-slate-100">
+            Attempted resource: {state.from}
+          </p>
+        )}
+
         <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
           <Link to="/app/dashboard">
-            <Button variant="primary">Return to Dashboard</Button>
+            <Button variant="primary">Return to My Dashboard</Button>
           </Link>
           <Link to="/login">
-            <Button variant="outline">Sign in as Different Role</Button>
+            <Button variant="outline">Sign in with Authorized Account</Button>
           </Link>
         </div>
       </div>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import ProtectedRoute from './ProtectedRoute';
 import { AppShell } from '../components/layout/AppShell';
 import { LoginPage } from '../features/auth/LoginPage';
 import {
@@ -33,21 +34,9 @@ import {
   AuditorDashboard,
   IntegrationAdminDashboard,
 } from '../features/dashboard/RoleDashboards';
-import { useAuth } from './providers';
-
-function ProtectedRoute({ children, allowedRoles }) {
-  const { user } = useAuth();
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  if (allowedRoles && !allowedRoles.includes(user.role) && user.role !== 'super_admin') {
-    return <Navigate to="/unauthorized" replace />;
-  }
-  return children;
-}
 
 export const router = createBrowserRouter([
-  // Public Auth Routes
+  // ── Public Auth Routes ────────────────────────────────────────────────────────
   {
     path: '/login',
     element: <LoginPage />,
@@ -73,11 +62,16 @@ export const router = createBrowserRouter([
     element: <AcceptInvitePage />,
   },
 
-  // Dedicated Direct Role Dashboards (Section 2) with Strict RBAC verification
+  // ── Strict Protected Role-Specific Dashboards (Section 2 & 4) ─────────────────
+  // FR-18: Universal Dashboard Protection — Reject unauthenticated requests
+  // FR-19: Strict Role Authorization — Permission & Role verification
   {
     path: '/super-admin/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['super_admin']}
+        requiredPermission="platform.dashboard.read"
+      >
         <AppShell>
           <SuperAdminDashboard />
         </AppShell>
@@ -87,7 +81,10 @@ export const router = createBrowserRouter([
   {
     path: '/admin/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['business_admin', 'super_admin']}
+        requiredPermission="organization.dashboard.read"
+      >
         <AppShell>
           <BusinessAdminDashboard />
         </AppShell>
@@ -97,7 +94,10 @@ export const router = createBrowserRouter([
   {
     path: '/manager/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['manager', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['manager', 'business_admin', 'super_admin']}
+        requiredPermission="manager.dashboard.read"
+      >
         <AppShell>
           <CallCenterManagerDashboard />
         </AppShell>
@@ -107,7 +107,10 @@ export const router = createBrowserRouter([
   {
     path: '/supervisor/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['supervisor', 'manager', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['supervisor', 'manager', 'business_admin', 'super_admin']}
+        requiredPermission="supervisor.dashboard.read"
+      >
         <AppShell>
           <SupervisorDashboard />
         </AppShell>
@@ -117,7 +120,10 @@ export const router = createBrowserRouter([
   {
     path: '/agent/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['agent', 'supervisor', 'manager', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['agent', 'supervisor', 'manager', 'business_admin', 'super_admin']}
+        requiredPermission="agent.dashboard.read"
+      >
         <AppShell>
           <AgentDashboard />
         </AppShell>
@@ -127,7 +133,10 @@ export const router = createBrowserRouter([
   {
     path: '/crm/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['crm_manager', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['crm_manager', 'business_admin', 'super_admin']}
+        requiredPermission="crm.dashboard.read"
+      >
         <AppShell>
           <CrmManagerDashboard />
         </AppShell>
@@ -137,7 +146,10 @@ export const router = createBrowserRouter([
   {
     path: '/qa/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['qa_officer', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['qa_officer', 'business_admin', 'super_admin']}
+        requiredPermission="qa.dashboard.read"
+      >
         <AppShell>
           <QaOfficerDashboard />
         </AppShell>
@@ -147,7 +159,10 @@ export const router = createBrowserRouter([
   {
     path: '/reports/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['reporting_analyst', 'manager', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['reporting_analyst', 'manager', 'business_admin', 'super_admin']}
+        requiredPermission="reports.dashboard.read"
+      >
         <AppShell>
           <ReportingAnalystDashboard />
         </AppShell>
@@ -157,7 +172,10 @@ export const router = createBrowserRouter([
   {
     path: '/auditor/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['auditor', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['auditor', 'super_admin']}
+        requiredPermission="auditor.dashboard.read"
+      >
         <AppShell>
           <AuditorDashboard />
         </AppShell>
@@ -167,7 +185,10 @@ export const router = createBrowserRouter([
   {
     path: '/integrations/dashboard',
     element: (
-      <ProtectedRoute allowedRoles={['integration_admin', 'business_admin', 'super_admin']}>
+      <ProtectedRoute
+        allowedRoles={['integration_admin', 'business_admin', 'super_admin']}
+        requiredPermission="integrations.dashboard.read"
+      >
         <AppShell>
           <IntegrationAdminDashboard />
         </AppShell>
@@ -175,7 +196,7 @@ export const router = createBrowserRouter([
     ),
   },
 
-  // Protected Application Routes wrapped in AppShell
+  // ── Protected Application Workspace (/app/*) ──────────────────────────────────
   {
     path: '/app',
     element: (
@@ -192,59 +213,164 @@ export const router = createBrowserRouter([
         path: 'dashboard',
         element: <DashboardPage />,
       },
-      // Section 4 Dedicated Permissions Management Screen
+      // Super Admin: Platform Organizations
       {
-        path: 'roles-permissions',
-        element: <RolesPermissionsPage />,
+        path: 'organizations',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin']} requiredPermission="organizations.manage">
+            <OrganizationsPage />
+          </ProtectedRoute>
+        ),
       },
-      // User Management & Password Handover Screen
+      // Business Admin / Super Admin: User Provisioning
       {
         path: 'users',
-        element: <UserManagementPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.read">
+            <UserManagementPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'users/create',
-        element: <UserManagementPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.create">
+            <UserManagementPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'invitations',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.create">
+            <InvitationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      // Section 4: Dedicated Permissions Management Screen
+      {
+        path: 'roles-permissions',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin']}>
+            <RolesPermissionsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'roles',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin']}>
+            <RolesPermissionsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'leads',
-        element: <LeadsPage />,
+        element: (
+          <ProtectedRoute requiredPermission="leads.read">
+            <LeadsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'leads/new',
-        element: <NewLeadPage />,
+        element: (
+          <ProtectedRoute requiredPermission="leads.create">
+            <NewLeadPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'leads/:id',
-        element: <LeadDetailPage />,
+        element: (
+          <ProtectedRoute requiredPermission="leads.read">
+            <LeadDetailPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'customers',
-        element: <LeadsPage />,
+        element: (
+          <ProtectedRoute requiredPermission="leads.read">
+            <LeadsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'dialer',
-        element: <DialerPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['agent', 'supervisor', 'manager', 'business_admin', 'super_admin']} requiredPermission="calls.initiate">
+            <DialerPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'calls',
-        element: <CallsPage />,
+        element: (
+          <ProtectedRoute requiredPermission="calls.read">
+            <CallsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'campaigns',
-        element: <CampaignsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin', 'manager', 'supervisor', 'crm_manager']}>
+            <CampaignsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'follow-ups',
-        element: <FollowUpsPage />,
+        element: (
+          <ProtectedRoute requiredPermission="leads.read">
+            <FollowUpsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'qa',
-        element: <QAPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['qa_officer', 'business_admin', 'manager', 'supervisor', 'super_admin']}>
+            <QAPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: 'reports',
-        element: <ReportsPage />,
+        element: (
+          <ProtectedRoute allowedRoles={['reporting_analyst', 'manager', 'business_admin', 'super_admin']} requiredPermission="reports.view">
+            <ReportsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'audit-logs',
+        element: (
+          <ProtectedRoute allowedRoles={['auditor', 'super_admin', 'business_admin']} requiredPermission="audit_logs.read">
+            <AuditorDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'integrations',
+        element: (
+          <ProtectedRoute allowedRoles={['integration_admin', 'super_admin', 'business_admin']}>
+            <IntegrationAdminDashboard />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'settings',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin', 'business_admin', 'integration_admin']}>
+            <SettingsPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'notifications',
+        element: <FollowUpsPage />,
       },
       {
         path: 'agents',
@@ -255,58 +381,28 @@ export const router = createBrowserRouter([
         element: <LeadsPage />,
       },
       {
-        path: 'roles',
-        element: <RolesPermissionsPage />,
-      },
-      {
         path: 'organization',
         element: <SettingsPage />,
-      },
-      {
-        path: 'audit-logs',
-        element: <AuditorDashboard />,
-      },
-      {
-        path: 'notifications',
-        element: <FollowUpsPage />,
-      },
-      {
-        path: 'integrations',
-        element: <IntegrationAdminDashboard />,
-      },
-      {
-        path: 'settings',
-        element: <SettingsPage />,
-      },
-      // Super Admin: Organization Management
-      {
-        path: 'organizations',
-        element: (
-          <ProtectedRoute allowedRoles={['super_admin']}>
-            <OrganizationsPage />
-          </ProtectedRoute>
-        ),
-      },
-      // Business Admin: Invitations Management
-      {
-        path: 'invitations',
-        element: (
-          <ProtectedRoute allowedRoles={['business_admin', 'super_admin']}>
-            <InvitationsPage />
-          </ProtectedRoute>
-        ),
       },
     ],
   },
 
-  // Root redirect
+  // ── Root & Fallback Redirects ─────────────────────────────────────────────────
+  // Unauthenticated users are redirected to /login by ProtectedRoute
   {
     path: '/',
-    element: <Navigate to="/app/dashboard" replace />,
+    element: (
+      <ProtectedRoute>
+        <Navigate to="/app/dashboard" replace />
+      </ProtectedRoute>
+    ),
   },
-  // Fallback
   {
     path: '*',
-    element: <Navigate to="/app/dashboard" replace />,
+    element: (
+      <ProtectedRoute>
+        <Navigate to="/app/dashboard" replace />
+      </ProtectedRoute>
+    ),
   },
 ]);

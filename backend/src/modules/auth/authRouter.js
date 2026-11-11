@@ -1,10 +1,10 @@
 /**
  * authRouter.js
- * POST /api/auth/login  – Sign in, return JWT + profile + roles
- * POST /api/auth/logout – Sign out
- * GET  /api/auth/me     – Return current user profile + roles + permissions
+ * POST /api/auth/login  – Sign in, verify password, return JWT + profile + roles + permissions
+ * POST /api/auth/logout – Sign out, invalidate session
+ * GET  /api/auth/me     – Return current user profile + roles + permissions (verifies active status)
  * POST /api/auth/invite – Business Admin invites a user (creates invitation record)
- * POST /api/auth/accept-invite – User accepts invitation, sets password
+ * POST /api/auth/accept-invite – User accepts invitation, sets individual password
  * POST /api/auth/forgot-password – Send password reset email
  */
 
@@ -20,34 +20,170 @@ import logger from '../../utils/logger.js';
 
 const router = express.Router();
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── Verified Individual Accounts (Local/Demo Fallback Registry) ────────────────
+export const INDIVIDUAL_ACCOUNTS = {
+  'sarah.miller@landercrm.io': {
+    password: 'SuperAdmin@2026!',
+    fullName: 'Sarah Miller',
+    role: 'super_admin',
+    roles: ['super_admin'],
+    organizationId: '00000000-0000-0000-0000-000000000000',
+    status: 'active',
+    permissions: [
+      'platform.dashboard.read',
+      'organizations.create', 'organizations.read', 'organizations.update', 'organizations.manage',
+      'users.create', 'users.read', 'users.update', 'users.deactivate',
+      'roles.read', 'roles.manage',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
+      'calls.initiate', 'calls.read', 'calls.update', 'calls.recording.read',
+      'campaigns.manage', 'follow_ups.manage', 'reports.view', 'reports.export',
+      'audit_logs.read', 'settings.manage', 'qa_reviews.create', 'qa_reviews.read',
+      'teams.manage', 'integrations.manage',
+    ],
+  },
+  'admin@callcenter.com': {
+    password: 'BusinessAdmin@2026!',
+    fullName: 'Arthur Pendelton',
+    role: 'business_admin',
+    roles: ['business_admin'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'organization.dashboard.read',
+      'users.create', 'users.read', 'users.update', 'users.deactivate',
+      'roles.read',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
+      'calls.read', 'campaigns.manage', 'follow_ups.manage',
+      'reports.view', 'reports.export', 'teams.manage', 'settings.manage',
+    ],
+  },
+  'marcus.v@callcenter.com': {
+    password: 'ManagerPass@2026!',
+    fullName: 'Marcus Vance',
+    role: 'manager',
+    roles: ['manager'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'manager.dashboard.read',
+      'users.read',
+      'leads.read', 'leads.assign',
+      'calls.initiate', 'calls.read', 'calls.update',
+      'campaigns.manage', 'follow_ups.manage',
+      'reports.view', 'reports.export', 'teams.manage',
+    ],
+  },
+  'elena.r@callcenter.com': {
+    password: 'SupervisorPass@2026!',
+    fullName: 'Elena Rostova',
+    role: 'supervisor',
+    roles: ['supervisor'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'supervisor.dashboard.read',
+      'users.read',
+      'leads.read', 'leads.assign',
+      'calls.read', 'calls.recording.read',
+      'follow_ups.manage', 'reports.view', 'qa_reviews.read',
+    ],
+  },
+  'emily.chen@callcenter.com': {
+    password: 'AgentPass@2026!',
+    fullName: 'Emily Chen',
+    role: 'agent',
+    roles: ['agent'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'agent.dashboard.read',
+      'leads.read', 'leads.update',
+      'calls.initiate', 'calls.read', 'calls.update',
+      'follow_ups.manage',
+    ],
+  },
+  'devon.m@callcenter.com': {
+    password: 'CrmManager@2026!',
+    fullName: 'Devon Miles',
+    role: 'crm_manager',
+    roles: ['crm_manager'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'crm.dashboard.read',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
+    ],
+  },
+  'david.ross@callcenter.com': {
+    password: 'QaOfficer@2026!',
+    fullName: 'David Ross',
+    role: 'qa_officer',
+    roles: ['qa_officer'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'qa.dashboard.read',
+      'calls.read', 'calls.recording.read',
+      'qa_reviews.create', 'qa_reviews.read',
+    ],
+  },
+  'chloe.b@callcenter.com': {
+    password: 'AnalystPass@2026!',
+    fullName: 'Chloe Bennett',
+    role: 'reporting_analyst',
+    roles: ['reporting_analyst'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'reports.dashboard.read',
+      'reports.view', 'reports.export',
+    ],
+  },
+  'frank.audit@callcenter.com': {
+    password: 'AuditorPass@2026!',
+    fullName: 'Frank Miller',
+    role: 'auditor',
+    roles: ['auditor'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'auditor.dashboard.read',
+      'audit_logs.read',
+    ],
+  },
+  'alex.telecom@callcenter.com': {
+    password: 'IntegrationAdmin@2026!',
+    fullName: 'Alex Rivera',
+    role: 'integration_admin',
+    roles: ['integration_admin'],
+    organizationId: '00000000-0000-0000-0000-000000000001',
+    status: 'active',
+    permissions: [
+      'integrations.dashboard.read',
+      'integrations.manage', 'settings.manage',
+    ],
+  },
+};
+
+const ROLE_DASHBOARDS = {
+  super_admin: '/super-admin/dashboard',
+  business_admin: '/admin/dashboard',
+  manager: '/manager/dashboard',
+  supervisor: '/supervisor/dashboard',
+  agent: '/agent/dashboard',
+  crm_manager: '/crm/dashboard',
+  qa_officer: '/qa/dashboard',
+  reporting_analyst: '/reports/dashboard',
+  auditor: '/auditor/dashboard',
+  integration_admin: '/integrations/dashboard',
+};
 
 /**
  * Fetch user profile + roles + permissions using the service-role admin client.
- * Falls back to demo data when Supabase is not configured.
  */
 async function fetchUserContext(userId) {
   if (!isSupabaseConfigured) {
-    return {
-      profile: {
-        id: userId,
-        full_name: 'Demo Super Admin',
-        organization_id: '00000000-0000-0000-0000-000000000001',
-        status: 'active',
-      },
-      roles: ['super_admin'],
-      permissions: [
-        'organizations.manage',
-        'users.create', 'users.read', 'users.update', 'users.deactivate',
-        'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
-        'calls.initiate', 'calls.read', 'calls.update', 'calls.recording.read',
-        'campaigns.manage', 'follow_ups.manage',
-        'reports.view', 'reports.export',
-        'audit_logs.read', 'settings.manage',
-        'qa_reviews.create', 'qa_reviews.read',
-        'teams.manage', 'integrations.manage',
-      ],
-    };
+    return null;
   }
 
   const adminClient = createClient(config.supabase.url, config.supabase.serviceRoleKey, {
@@ -89,50 +225,45 @@ router.post('/login', async (req, res) => {
   const body = validateBody(schema, req.body, res);
   if (!body) return;
 
-  if (!isSupabaseConfigured) {
-    // Demo mode: derive role from email pattern
-    const email = body.email.toLowerCase();
-    const role =
-      email.includes('super') || email.includes('platform') ? 'super_admin'
-      : email.includes('admin') || email.includes('business') ? 'business_admin'
-      : email.includes('manager') ? 'manager'
-      : email.includes('supervisor') ? 'supervisor'
-      : email.includes('agent') ? 'agent'
-      : email.includes('crm') ? 'crm_manager'
-      : email.includes('qa') ? 'qa_officer'
-      : email.includes('report') ? 'reporting_analyst'
-      : email.includes('audit') ? 'auditor'
-      : email.includes('integration') ? 'integration_admin'
-      : 'agent';
+  const emailLower = body.email.toLowerCase().trim();
 
-    const ROLE_DASHBOARD = {
-      super_admin: '/super-admin/dashboard',
-      business_admin: '/admin/dashboard',
-      manager: '/manager/dashboard',
-      supervisor: '/supervisor/dashboard',
-      agent: '/agent/dashboard',
-      crm_manager: '/crm/dashboard',
-      qa_officer: '/qa/dashboard',
-      reporting_analyst: '/reports/dashboard',
-      auditor: '/auditor/dashboard',
-      integration_admin: '/integrations/dashboard',
-    };
+  // ── 1. Local / Demo Verification Mode ────────────────────────────────────────
+  if (!isSupabaseConfigured) {
+    const account = INDIVIDUAL_ACCOUNTS[emailLower];
+
+    if (!account) {
+      return errorResponse(res, 'Invalid email or password', 401);
+    }
+
+    // Verify Password
+    if (account.password !== body.password) {
+      return errorResponse(res, 'Invalid email or password', 401);
+    }
+
+    // Verify Active Account Status (FR-20)
+    if (account.status !== 'active') {
+      return errorResponse(res, 'Account is deactivated. Access denied.', 403);
+    }
+
+    const primaryRole = account.role;
+    const redirectTo = ROLE_DASHBOARDS[primaryRole] || '/app/dashboard';
 
     return successResponse(res, {
-      token: `demo-${role}-token`,
+      token: `demo-${primaryRole}-token`,
       user: {
-        id: `usr_demo_${role}`,
-        email: body.email,
-        full_name: body.email.split('@')[0].replace(/[._]/g, ' '),
-        organization_id: '00000000-0000-0000-0000-000000000001',
-        status: 'active',
-        roles: [role],
-        permissions: [],
+        id: `usr_${primaryRole}_01`,
+        email: emailLower,
+        full_name: account.fullName,
+        organization_id: account.organizationId,
+        status: account.status,
+        roles: account.roles,
+        permissions: account.permissions,
       },
-      redirectTo: ROLE_DASHBOARD[role] || '/app/dashboard',
+      redirectTo,
     });
   }
 
+  // ── 2. Production Supabase Auth Verification ─────────────────────────────────
   try {
     const { data, error } = await supabase.auth.signInWithPassword({
       email: body.email,
@@ -145,26 +276,17 @@ router.post('/login', async (req, res) => {
 
     const context = await fetchUserContext(data.user.id);
     if (!context) {
-      return errorResponse(res, 'Account inactive or profile not found', 403);
+      return errorResponse(res, 'Account is deactivated or profile not found', 403);
     }
 
-    const ROLE_DASHBOARD = {
-      super_admin: '/super-admin/dashboard',
-      business_admin: '/admin/dashboard',
-      call_center_manager: '/manager/dashboard',
-      supervisor: '/supervisor/dashboard',
-      agent: '/agent/dashboard',
-      crm_manager: '/crm/dashboard',
-      qa_officer: '/qa/dashboard',
-      reporting_analyst: '/reports/dashboard',
-      auditor: '/auditor/dashboard',
-      integration_admin: '/integrations/dashboard',
-    };
+    if (context.profile.status !== 'active') {
+      return errorResponse(res, 'Account is deactivated. Access denied.', 403);
+    }
 
     const primaryRole = context.roles[0] || 'agent';
-    const redirectTo = ROLE_DASHBOARD[primaryRole] || '/app/dashboard';
+    const redirectTo = ROLE_DASHBOARDS[primaryRole] || '/app/dashboard';
 
-    // Log successful login
+    // Log successful login in immutable audit trail
     await auditRepository.log({
       organizationId: context.profile.organization_id,
       actorId: data.user.id,
@@ -173,7 +295,7 @@ router.post('/login', async (req, res) => {
       resourceId: data.user.id,
       newValue: { roles: context.roles },
       ipAddress: req.ip,
-    }).catch(() => {}); // Non-blocking
+    }).catch(() => {});
 
     return successResponse(res, {
       token: data.session.access_token,
@@ -217,6 +339,10 @@ router.post('/logout', authenticate, async (req, res) => {
 
 // ── GET /api/auth/me ──────────────────────────────────────────────────────────
 router.get('/me', authenticate, async (req, res) => {
+  if (req.user.status && req.user.status !== 'active') {
+    return errorResponse(res, 'Account is deactivated', 403);
+  }
+
   return successResponse(res, {
     user: {
       id: req.user.id,
@@ -225,6 +351,7 @@ router.get('/me', authenticate, async (req, res) => {
       organization_id: req.user.organizationId,
       roles: req.user.roles,
       permissions: req.user.permissions,
+      status: req.user.status || 'active',
     },
   });
 });
@@ -236,7 +363,6 @@ router.post('/forgot-password', async (req, res) => {
   if (!body) return;
 
   if (!isSupabaseConfigured) {
-    // In demo mode, pretend we sent the email
     return successResponse(res, {
       message: 'If this email is registered, a password reset link has been sent.',
     });
@@ -255,7 +381,6 @@ router.post('/forgot-password', async (req, res) => {
 });
 
 // ── POST /api/auth/invite ─────────────────────────────────────────────────────
-// Business Admin invites a user to join their organization
 router.post('/invite', authenticate, requirePermission('users.create'), async (req, res) => {
   const schema = z.object({
     email: z.string().email(),
@@ -266,7 +391,6 @@ router.post('/invite', authenticate, requirePermission('users.create'), async (r
   const body = validateBody(schema, req.body, res);
   if (!body) return;
 
-  // Guard: prevent inviting super_admin
   if (body.role_name === 'super_admin' && !req.user.roles?.includes('super_admin')) {
     return errorResponse(res, 'You are not authorized to invite a Super Admin', 403);
   }
@@ -288,13 +412,11 @@ router.post('/invite', authenticate, requirePermission('users.create'), async (r
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Resolve role ID
     const { data: roleRecord } = await adminClient
       .from('roles').select('id').eq('name', body.role_name).single();
 
     if (!roleRecord) return errorResponse(res, 'Role not found', 404);
 
-    // Create invitation record
     const token = crypto.randomUUID();
     const { data: invite, error: inviteErr } = await adminClient
       .from('organization_invitations')
@@ -311,7 +433,6 @@ router.post('/invite', authenticate, requirePermission('users.create'), async (r
 
     if (inviteErr) return errorResponse(res, 'Failed to create invitation', 500);
 
-    // Send invitation email via Supabase auth
     const redirectTo = `${req.headers.origin || config.frontendUrl}/accept-invite?token=${token}`;
     await adminClient.auth.admin.inviteUserByEmail(body.email, {
       redirectTo,
@@ -323,7 +444,6 @@ router.post('/invite', authenticate, requirePermission('users.create'), async (r
       },
     }).catch((e) => logger.warn('Supabase invite email error:', e));
 
-    // Audit log
     await auditRepository.log({
       organizationId: req.user.organizationId,
       actorId: req.user.id,
@@ -345,7 +465,6 @@ router.post('/invite', authenticate, requirePermission('users.create'), async (r
 });
 
 // ── POST /api/auth/accept-invite ──────────────────────────────────────────────
-// User accepts invitation, sets their password, activates account
 router.post('/accept-invite', async (req, res) => {
   const schema = z.object({
     token: z.string(),
@@ -368,7 +487,6 @@ router.post('/accept-invite', async (req, res) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Look up invitation
     const { data: invite, error: inviteErr } = await adminClient
       .from('organization_invitations')
       .select('*, roles(name)')
@@ -381,20 +499,17 @@ router.post('/accept-invite', async (req, res) => {
       return errorResponse(res, 'Invalid or expired invitation link', 400);
     }
 
-    // Check if user already exists
     const { data: existingUsers } = await adminClient.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find((u) => u.email === invite.email);
 
     let authUserId;
     if (existingUser) {
-      // Update password for existing user
-      const { data: updated, error: updateErr } = await adminClient.auth.admin.updateUserById(
+      const { error: updateErr } = await adminClient.auth.admin.updateUserById(
         existingUser.id, { password: body.password }
       );
       if (updateErr) return errorResponse(res, 'Failed to set password', 500);
       authUserId = existingUser.id;
     } else {
-      // Create auth user
       const { data: authUser, error: authErr } = await adminClient.auth.admin.createUser({
         email: invite.email,
         password: body.password,
@@ -408,7 +523,6 @@ router.post('/accept-invite', async (req, res) => {
       authUserId = authUser.user.id;
     }
 
-    // Create / update profile
     await adminClient.from('profiles').upsert({
       id: authUserId,
       organization_id: invite.organization_id,
@@ -416,7 +530,6 @@ router.post('/accept-invite', async (req, res) => {
       status: 'active',
     }, { onConflict: 'id' });
 
-    // Assign role
     await adminClient.from('user_roles').upsert({
       user_id: authUserId,
       role_id: invite.role_id,
@@ -424,12 +537,10 @@ router.post('/accept-invite', async (req, res) => {
       granted_by: invite.invited_by,
     }, { onConflict: 'user_id,role_id,organization_id' });
 
-    // Mark invitation as accepted
     await adminClient.from('organization_invitations')
       .update({ accepted_at: new Date().toISOString() })
       .eq('id', invite.id);
 
-    // Audit log
     await auditRepository.log({
       organizationId: invite.organization_id,
       actorId: invite.invited_by,
@@ -451,4 +562,3 @@ router.post('/accept-invite', async (req, res) => {
 });
 
 export default router;
-
