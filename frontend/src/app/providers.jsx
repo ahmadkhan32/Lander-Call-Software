@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { supabase } from '../lib/supabase';
 import { ToastProvider } from '../components/ui/Toast';
 import { ROLE_LABELS, ROLE_DASHBOARD_ROUTES } from '../lib/permissions';
-import { verifyCredentials } from '../lib/accounts';
+import { verifyCredentials, INDIVIDUAL_ACCOUNTS } from '../lib/accounts';
 
 const AuthContext = createContext(null);
 
@@ -204,6 +204,7 @@ export function AuthProvider({ children }) {
   /**
    * switchRole(newRole)
    * Only permits switching among explicitly assigned and authorized roles (FR-19).
+   * Contextually updates permissions to enable live RBAC previewing for authorized roles.
    */
   const switchRole = (newRole) => {
     if (!user) return;
@@ -212,10 +213,14 @@ export function AuthProvider({ children }) {
       console.warn(`Denied unauthorized role change attempt to: ${newRole}`);
       return;
     }
+
+    const targetAccount = Object.values(INDIVIDUAL_ACCOUNTS).find((acc) => acc.role === newRole);
+
     const updated = {
       ...user,
       role: newRole,
       roleTitle: ROLE_LABELS[newRole] || newRole,
+      permissions: targetAccount?.permissions || user.permissions || [],
     };
     setUser(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));

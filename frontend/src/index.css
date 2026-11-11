@@ -48,6 +48,21 @@ body {
   background: #94a3b8;
 }
 
+/* Dark scrollbar for dark navy sidebar */
+nav::-webkit-scrollbar {
+  width: 5px;
+}
+nav::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.4);
+}
+nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 9999px;
+}
+nav::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
 :focus-visible {
   outline: 2px solid var(--color-primary);
   outline-offset: 2px;
