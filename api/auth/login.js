@@ -40,10 +40,11 @@ const INDIVIDUAL_ACCOUNTS = {
     permissions: [
       'organization.dashboard.read',
       'users.create', 'users.read', 'users.update', 'users.deactivate',
-      'roles.read',
+      'roles.read', 'roles.manage',
       'leads.create', 'leads.read', 'leads.update', 'leads.assign', 'leads.import', 'leads.export', 'leads.archive',
       'calls.initiate', 'calls.read', 'calls.update', 'campaigns.manage', 'follow_ups.manage',
       'reports.view', 'reports.export', 'teams.manage', 'settings.manage',
+      'audit_logs.read', 'integrations.read', 'integrations.manage',
     ],
   },
   'marcus.v@callcenter.com': {
@@ -59,10 +60,11 @@ const INDIVIDUAL_ACCOUNTS = {
     permissions: [
       'manager.dashboard.read',
       'users.read',
-      'leads.read', 'leads.assign',
+      'leads.create', 'leads.read', 'leads.update', 'leads.assign',
       'calls.initiate', 'calls.read', 'calls.update',
       'campaigns.manage', 'follow_ups.manage',
       'reports.view', 'reports.export', 'teams.manage',
+      'qa_reviews.read',
     ],
   },
   'elena.r@callcenter.com': {
@@ -78,9 +80,9 @@ const INDIVIDUAL_ACCOUNTS = {
     permissions: [
       'supervisor.dashboard.read',
       'users.read',
-      'leads.read', 'leads.assign',
+      'leads.read', 'leads.update', 'leads.assign',
       'calls.initiate', 'calls.read', 'calls.update', 'calls.recording.read',
-      'follow_ups.manage', 'reports.view', 'qa_reviews.read',
+      'campaigns.manage', 'follow_ups.manage', 'reports.view', 'qa_reviews.read',
     ],
   },
   'emily.chen@callcenter.com': {
@@ -173,7 +175,7 @@ const INDIVIDUAL_ACCOUNTS = {
     dashboardRoute: '/integrations/dashboard',
     permissions: [
       'integrations.dashboard.read',
-      'integrations.manage', 'settings.manage',
+      'integrations.read', 'integrations.manage', 'settings.manage',
     ],
   },
 };
