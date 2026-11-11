@@ -21,3 +21,4 @@ export default function handler(req, res) {
     message: 'Logged out successfully',
   });
 }
+

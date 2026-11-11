@@ -12,6 +12,7 @@ const STORAGE_KEY = 'lander_auth_session';
 async function fetchUserProfile(accessToken) {
   try {
     const apiBase = import.meta.env.VITE_API_URL || '';
+    if (!apiBase || !apiBase.trim()) return null;
     const res = await fetch(`${apiBase}/api/auth/me`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
@@ -118,65 +119,66 @@ export function AuthProvider({ children }) {
       const apiBase = import.meta.env.VITE_API_URL || '';
       const normalizedEmail = email.trim().toLowerCase();
 
-      // 1. Attempt authentication with backend API endpoint if reachable
-      try {
-        const res = await fetch(`${apiBase}/api/auth/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: normalizedEmail, password }),
-        });
+      // 1. If an external backend API URL is explicitly configured, authenticate with backend
+      if (apiBase && apiBase.trim().length > 0) {
+        try {
+          const res = await fetch(`${apiBase}/api/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail, password }),
+          });
 
-        const contentType = res.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const json = await res.json();
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const json = await res.json();
 
-          if (!res.ok || !json.success) {
+            if (!res.ok || !json.success) {
+              return {
+                success: false,
+                error: json.error || 'Access Denied: Authentication failed. Please verify your credentials.',
+              };
+            }
+
+            const { user: userPayload, token, redirectTo } = json.data;
+
+            if (userPayload.status && userPayload.status !== 'active') {
+              return {
+                success: false,
+                error: 'Access Denied: Your account has been deactivated. Please contact your administrator.',
+              };
+            }
+
+            const primaryRole = userPayload.roles?.[0] || 'agent';
+            const normalizedUser = {
+              id: userPayload.id,
+              email: userPayload.email,
+              name: userPayload.full_name || email.split('@')[0],
+              role: primaryRole,
+              roles: userPayload.roles || [primaryRole],
+              roleTitle: ROLE_LABELS[primaryRole] || 'User',
+              organization: userPayload.organization_id,
+              organization_id: userPayload.organization_id,
+              permissions: userPayload.permissions || [],
+              status: userPayload.status || 'active',
+              accessToken: token,
+            };
+
+            setUser(normalizedUser);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
+
             return {
-              success: false,
-              error: json.error || 'Access Denied: Authentication failed. Please verify your credentials.',
+              success: true,
+              redirectTo: redirectTo || ROLE_DASHBOARD_ROUTES[primaryRole] || '/app/dashboard',
+              user: normalizedUser,
             };
           }
-
-          const { user: userPayload, token, redirectTo } = json.data;
-
-          if (userPayload.status && userPayload.status !== 'active') {
-            return {
-              success: false,
-              error: 'Access Denied: Your account has been deactivated. Please contact your administrator.',
-            };
-          }
-
-          const primaryRole = userPayload.roles?.[0] || 'agent';
-          const normalizedUser = {
-            id: userPayload.id,
-            email: userPayload.email,
-            name: userPayload.full_name || email.split('@')[0],
-            role: primaryRole,
-            roles: userPayload.roles || [primaryRole],
-            roleTitle: ROLE_LABELS[primaryRole] || 'User',
-            organization: userPayload.organization_id,
-            organization_id: userPayload.organization_id,
-            permissions: userPayload.permissions || [],
-            status: userPayload.status || 'active',
-            accessToken: token,
-          };
-
-          setUser(normalizedUser);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizedUser));
-
-          return {
-            success: true,
-            redirectTo: redirectTo || ROLE_DASHBOARD_ROUTES[primaryRole] || '/app/dashboard',
-            user: normalizedUser,
-          };
+        } catch (fetchErr) {
+          console.debug('Backend API offline or unreachable, validating via verified accounts registry:', fetchErr);
         }
-      } catch (fetchErr) {
-        // Backend API offline, static hosting or unreachable — validate against authorized registry
-        console.debug('Backend auth endpoint unreachable; validating via authorized registry:', fetchErr);
       }
 
-      // 2. Strict Credential Validation Fallback (FR-17, FR-18, FR-19, FR-20)
-      // Handles static hosting (Vercel) while enforcing individual credentials strictly.
+      // 2. Strict Credential Validation (FR-17, FR-18, FR-19, FR-20)
+      // Handles client SPA and Vercel environments with zero HTTP 405 errors.
       const verification = verifyCredentials(email, password);
       if (!verification.success) {
         return { success: false, error: verification.error };
@@ -229,10 +231,12 @@ export function AuthProvider({ children }) {
     try {
       if (user?.accessToken) {
         const apiBase = import.meta.env.VITE_API_URL || '';
-        await fetch(`${apiBase}/api/auth/logout`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${user.accessToken}` },
-        }).catch(() => {});
+        if (apiBase && apiBase.trim().length > 0) {
+          await fetch(`${apiBase}/api/auth/logout`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${user.accessToken}` },
+          }).catch(() => {});
+        }
       }
       await supabase.auth.signOut().catch(() => {});
     } finally {

@@ -232,3 +232,4 @@ export function verifyCredentials(email, password) {
     redirectTo: account.dashboardRoute || ROLE_DASHBOARD_ROUTES[account.role] || '/app/dashboard',
   };
 }
+
