@@ -15,41 +15,31 @@ export function LoginPage() {
   const { login, loginDemo } = useAuth();
   const navigate = useNavigate();
 
+  const [loginError, setLoginError] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const res = await login(email, password);
-    setLoading(false);
-
-    // Identify role destination
-    const assignedRole = email.includes('super')
-      ? 'super_admin'
-      : email.includes('admin')
-      ? 'business_admin'
-      : email.includes('manager')
-      ? 'manager'
-      : email.includes('supervisor')
-      ? 'supervisor'
-      : email.includes('crm')
-      ? 'crm_manager'
-      : email.includes('qa')
-      ? 'qa_officer'
-      : email.includes('report')
-      ? 'reporting_analyst'
-      : email.includes('audit')
-      ? 'auditor'
-      : email.includes('integration')
-      ? 'integration_admin'
-      : 'agent';
-
-    const targetRoute = ROLE_DASHBOARD_ROUTES[assignedRole] || '/app/dashboard';
-    navigate(targetRoute);
+    setLoginError('');
+    try {
+      const result = await login(email, password);
+      if (result?.success) {
+        // Backend login returns the correct role-specific redirectTo
+        const targetRoute = result.redirectTo || ROLE_DASHBOARD_ROUTES['agent'];
+        navigate(targetRoute, { replace: true });
+      } else {
+        setLoginError('Invalid email or password. Try the demo login below.');
+      }
+    } catch {
+      setLoginError('Login failed. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDemo = (role) => {
-    loginDemo(role);
-    const targetRoute = ROLE_DASHBOARD_ROUTES[role] || '/app/dashboard';
-    navigate(targetRoute);
+    const targetRoute = loginDemo(role) || ROLE_DASHBOARD_ROUTES[role] || '/app/dashboard';
+    navigate(targetRoute, { replace: true });
   };
 
   const demoRoles = [

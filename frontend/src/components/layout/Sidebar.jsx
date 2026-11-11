@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Users2,
@@ -15,14 +15,19 @@ import {
   FileText,
   Radio,
   LogOut,
+  Mail,
+  ChevronRight,
+  Globe,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../app/providers';
-import { hasPermission, PERMISSIONS, ROLE_LABELS } from '../../lib/permissions';
+import { hasPermission, PERMISSIONS, ROLE_LABELS, ROLE_DASHBOARD_ROUTES } from '../../lib/permissions';
 
 const allNavItems = [
   { label: 'Dashboard', icon: LayoutDashboard, path: '/app/dashboard', permission: PERMISSIONS.VIEW_DASHBOARD },
+  { label: 'Organizations', icon: Globe, path: '/app/organizations', permission: PERMISSIONS.MANAGE_ORGANIZATIONS },
   { label: 'Users & Passwords', icon: Users2, path: '/app/users', permission: PERMISSIONS.MANAGE_USERS },
+  { label: 'Invitations', icon: Mail, path: '/app/invitations', permission: PERMISSIONS.MANAGE_USERS },
   { label: 'Roles & Permissions', icon: ShieldCheck, path: '/app/roles-permissions', permission: PERMISSIONS.MANAGE_ROLES_PERMISSIONS },
   { label: 'Leads CRM', icon: Users2, path: '/app/leads', badge: '12', permission: PERMISSIONS.MANAGE_LEADS },
   { label: 'Customers', icon: Building2, path: '/app/customers', permission: PERMISSIONS.VIEW_CUSTOMERS },
@@ -44,6 +49,13 @@ export function Sidebar({ onClose }) {
   const visibleNav = allNavItems.filter((item) =>
     hasPermission(userRole, item.permission)
   );
+
+  const roleDashboardRoute = ROLE_DASHBOARD_ROUTES?.[userRole] || '/app/dashboard';
+
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/login';
+  };
 
   return (
     <div className="flex h-full flex-col justify-between bg-navy text-white w-64 select-none">
@@ -121,7 +133,7 @@ export function Sidebar({ onClose }) {
             </div>
           </div>
           <button
-            onClick={logout}
+            onClick={handleLogout}
             title="Log out"
             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
           >

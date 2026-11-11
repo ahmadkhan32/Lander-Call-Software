@@ -9,13 +9,16 @@ import logger from './utils/logger.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 
 // Routers
-import leadsRouter     from './modules/leads/leadsRouter.js';
-import callsRouter     from './modules/calls/callsRouter.js';
-import campaignsRouter from './modules/campaigns/campaignsRouter.js';
-import followUpsRouter from './modules/follow-ups/followUpsRouter.js';
-import reportsRouter   from './modules/reports/reportsRouter.js';
-import usersRouter     from './modules/users/usersRouter.js';
-import webhooksRouter  from './modules/webhooks/webhooksRouter.js';
+import authRouter          from './modules/auth/authRouter.js';
+import organizationsRouter from './modules/organizations/organizationsRouter.js';
+import rolesRouter         from './modules/roles/rolesRouter.js';
+import leadsRouter         from './modules/leads/leadsRouter.js';
+import callsRouter         from './modules/calls/callsRouter.js';
+import campaignsRouter     from './modules/campaigns/campaignsRouter.js';
+import followUpsRouter     from './modules/follow-ups/followUpsRouter.js';
+import reportsRouter       from './modules/reports/reportsRouter.js';
+import usersRouter         from './modules/users/usersRouter.js';
+import webhooksRouter      from './modules/webhooks/webhooksRouter.js';
 
 const app = express();
 
@@ -78,13 +81,16 @@ app.get('/health', (_req, res) => {
 });
 
 // ── API Routes ────────────────────────────────────────────────────────────────
-app.use('/api/leads',       leadsRouter);
-app.use('/api/calls',       callsRouter);
-app.use('/api/campaigns',   campaignsRouter);
-app.use('/api/follow-ups',  followUpsRouter);
-app.use('/api/reports',     reportsRouter);
-app.use('/api/users',       usersRouter);
-app.use('/api/webhooks',    webhooksRouter);
+app.use('/api/auth',          authRouter);
+app.use('/api/organizations', organizationsRouter);
+app.use('/api/roles',         rolesRouter);
+app.use('/api/leads',         leadsRouter);
+app.use('/api/calls',         callsRouter);
+app.use('/api/campaigns',     campaignsRouter);
+app.use('/api/follow-ups',    followUpsRouter);
+app.use('/api/reports',       reportsRouter);
+app.use('/api/users',         usersRouter);
+app.use('/api/webhooks',      webhooksRouter);
 
 // ── Error handling ────────────────────────────────────────────────────────────
 app.use(notFoundHandler);

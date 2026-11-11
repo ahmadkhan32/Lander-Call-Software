@@ -7,6 +7,7 @@ import {
   ResetPasswordPage,
   UnauthorizedPage,
   AuthCallbackPage,
+  AcceptInvitePage,
 } from '../features/auth/AuthPages';
 import { DashboardPage } from '../features/dashboard/DashboardPage';
 import { LeadsPage } from '../features/leads/LeadsPage';
@@ -18,6 +19,8 @@ import { CampaignsPage, FollowUpsPage } from '../features/campaigns/CampaignPage
 import { QAPage, ReportsPage, SettingsPage } from '../features/settings/OperationalPages';
 import { RolesPermissionsPage } from '../features/settings/RolesPermissionsPage';
 import { UserManagementPage } from '../features/settings/UserManagementPage';
+import { OrganizationsPage } from '../features/admin/OrganizationsPage';
+import { InvitationsPage } from '../features/admin/InvitationsPage';
 import {
   SuperAdminDashboard,
   BusinessAdminDashboard,
@@ -64,6 +67,10 @@ export const router = createBrowserRouter([
   {
     path: '/auth/callback',
     element: <AuthCallbackPage />,
+  },
+  {
+    path: '/accept-invite',
+    element: <AcceptInvitePage />,
   },
 
   // Dedicated Direct Role Dashboards (Section 2) with Strict RBAC verification
@@ -270,6 +277,24 @@ export const router = createBrowserRouter([
       {
         path: 'settings',
         element: <SettingsPage />,
+      },
+      // Super Admin: Organization Management
+      {
+        path: 'organizations',
+        element: (
+          <ProtectedRoute allowedRoles={['super_admin']}>
+            <OrganizationsPage />
+          </ProtectedRoute>
+        ),
+      },
+      // Business Admin: Invitations Management
+      {
+        path: 'invitations',
+        element: (
+          <ProtectedRoute allowedRoles={['business_admin', 'super_admin']}>
+            <InvitationsPage />
+          </ProtectedRoute>
+        ),
       },
     ],
   },
