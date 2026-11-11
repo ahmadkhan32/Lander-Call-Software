@@ -1,0 +1,32 @@
+name: CI / Build & Test
+
+on:
+  push:
+    branches: [ main, implement_rbac_system ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Run Backend Vitest Tests
+        run: |
+          cd backend
+          npm install
+          npm test
+
+      - name: Build Frontend Vite Production SPA
+        run: |
+          cd frontend
+          npm install
+          npm run build
