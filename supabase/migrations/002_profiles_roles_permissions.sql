@@ -6,7 +6,7 @@
 -- ============================================================
 -- PROFILES  (extends auth.users)
 -- ============================================================
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id              UUID        PRIMARY KEY REFERENCES auth.users(id) ON DELETE RESTRICT,
   organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   full_name       TEXT        NOT NULL,
@@ -20,17 +20,17 @@ CREATE TABLE public.profiles (
   UNIQUE (organization_id, id)
 );
 
-CREATE INDEX idx_profiles_org     ON public.profiles(organization_id);
-CREATE INDEX idx_profiles_status  ON public.profiles(status);
+CREATE INDEX IF NOT EXISTS idx_profiles_org     ON public.profiles(organization_id);
+CREATE INDEX IF NOT EXISTS idx_profiles_status  ON public.profiles(status);
 
-CREATE TRIGGER trg_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON public.profiles;
+CREATE TRIGGER trg_profiles_updated_at BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
 -- ROLES
 -- ============================================================
-CREATE TABLE public.roles (
+CREATE TABLE IF NOT EXISTS public.roles (
   id          UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT  NOT NULL UNIQUE,
   description TEXT
@@ -52,7 +52,7 @@ INSERT INTO public.roles (name, description) VALUES
 -- ============================================================
 -- PERMISSIONS
 -- ============================================================
-CREATE TABLE public.permissions (
+CREATE TABLE IF NOT EXISTS public.permissions (
   id             UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
   permission_key TEXT  NOT NULL UNIQUE,
   description    TEXT
@@ -101,7 +101,7 @@ INSERT INTO public.permissions (permission_key, description) VALUES
 -- ============================================================
 -- USER ↔ ROLE (user may hold multiple roles in the same org)
 -- ============================================================
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
   user_id         UUID NOT NULL,
   role_id         UUID NOT NULL REFERENCES public.roles(id)  ON DELETE CASCADE,
   organization_id UUID NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
@@ -111,13 +111,13 @@ CREATE TABLE public.user_roles (
   FOREIGN KEY (organization_id, user_id) REFERENCES public.profiles(organization_id, id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_user_roles_user ON public.user_roles(user_id);
-CREATE INDEX idx_user_roles_org  ON public.user_roles(organization_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_user ON public.user_roles(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_roles_org  ON public.user_roles(organization_id);
 
 -- ============================================================
 -- ROLE ↔ PERMISSION
 -- ============================================================
-CREATE TABLE public.role_permissions (
+CREATE TABLE IF NOT EXISTS public.role_permissions (
   role_id       UUID NOT NULL REFERENCES public.roles(id)       ON DELETE CASCADE,
   permission_id UUID NOT NULL REFERENCES public.permissions(id) ON DELETE CASCADE,
   PRIMARY KEY (role_id, permission_id)

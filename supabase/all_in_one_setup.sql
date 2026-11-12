@@ -2,10 +2,10 @@
 -- LANDER CRM & OPERATIONS PLATFORM - ALL-IN-ONE MASTER SCHEMA & SETUP
 -- Run this entire script in Supabase Studio -> SQL Editor
 -- Creates all tables, relations, triggers, RLS policies, and RBAC seeds in 1 click!
--- Completely idempotent (safe to run on fresh or existing databases).
+-- Completely idempotent (safe to run repeatedly on fresh or existing databases).
 -- ============================================================================
 
--- Extensions
+-- Ensure required PostgreSQL extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -70,12 +70,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_organizations_updated_at
-  BEFORE UPDATE ON public.organizations
+DROP TRIGGER IF EXISTS trg_organizations_updated_at ON public.organizations;
+CREATE TRIGGER trg_organizations_updated_at BEFORE UPDATE ON public.organizations
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER trg_subscriptions_updated_at
-  BEFORE UPDATE ON public.subscriptions
+DROP TRIGGER IF EXISTS trg_subscriptions_updated_at ON public.subscriptions;
+CREATE TRIGGER trg_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
@@ -108,8 +108,8 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 CREATE INDEX IF NOT EXISTS idx_profiles_org     ON public.profiles(organization_id);
 CREATE INDEX IF NOT EXISTS idx_profiles_status  ON public.profiles(status);
 
-CREATE TRIGGER trg_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
+DROP TRIGGER IF EXISTS trg_profiles_updated_at ON public.profiles;
+CREATE TRIGGER trg_profiles_updated_at BEFORE UPDATE ON public.profiles
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -342,8 +342,8 @@ CREATE TABLE IF NOT EXISTS public.teams (
 CREATE INDEX IF NOT EXISTS idx_teams_org    ON public.teams(organization_id);
 CREATE INDEX IF NOT EXISTS idx_teams_leader ON public.teams(leader_id);
 
-CREATE TRIGGER trg_teams_updated_at
-  BEFORE UPDATE ON public.teams
+DROP TRIGGER IF EXISTS trg_teams_updated_at ON public.teams;
+CREATE TRIGGER trg_teams_updated_at BEFORE UPDATE ON public.teams
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -402,8 +402,8 @@ CREATE INDEX IF NOT EXISTS idx_customers_org    ON public.customers(organization
 CREATE INDEX IF NOT EXISTS idx_customers_email  ON public.customers(organization_id, email);
 CREATE INDEX IF NOT EXISTS idx_customers_status ON public.customers(organization_id, status);
 
-CREATE TRIGGER trg_customers_updated_at
-  BEFORE UPDATE ON public.customers
+DROP TRIGGER IF EXISTS trg_customers_updated_at ON public.customers;
+CREATE TRIGGER trg_customers_updated_at BEFORE UPDATE ON public.customers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -420,8 +420,8 @@ CREATE TABLE IF NOT EXISTS public.contact_notes (
 
 CREATE INDEX IF NOT EXISTS idx_contact_notes_customer ON public.contact_notes(customer_id);
 
-CREATE TRIGGER trg_contact_notes_updated_at
-  BEFORE UPDATE ON public.contact_notes
+DROP TRIGGER IF EXISTS trg_contact_notes_updated_at ON public.contact_notes;
+CREATE TRIGGER trg_contact_notes_updated_at BEFORE UPDATE ON public.contact_notes
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
@@ -472,8 +472,8 @@ CREATE TABLE IF NOT EXISTS public.campaigns (
 CREATE INDEX IF NOT EXISTS idx_campaigns_org    ON public.campaigns(organization_id);
 CREATE INDEX IF NOT EXISTS idx_campaigns_status ON public.campaigns(organization_id, status);
 
-CREATE TRIGGER trg_campaigns_updated_at
-  BEFORE UPDATE ON public.campaigns
+DROP TRIGGER IF EXISTS trg_campaigns_updated_at ON public.campaigns;
+CREATE TRIGGER trg_campaigns_updated_at BEFORE UPDATE ON public.campaigns
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -549,8 +549,8 @@ CREATE INDEX IF NOT EXISTS idx_leads_phone        ON public.leads(organization_i
 CREATE INDEX IF NOT EXISTS idx_leads_score        ON public.leads(organization_id, score DESC);
 CREATE INDEX IF NOT EXISTS idx_leads_next_contact ON public.leads(organization_id, next_contact_at);
 
-CREATE TRIGGER trg_leads_updated_at
-  BEFORE UPDATE ON public.leads
+DROP TRIGGER IF EXISTS trg_leads_updated_at ON public.leads;
+CREATE TRIGGER trg_leads_updated_at BEFORE UPDATE ON public.leads
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 
@@ -614,8 +614,8 @@ CREATE INDEX IF NOT EXISTS idx_calls_campaign   ON public.calls(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_calls_started    ON public.calls(organization_id, started_at DESC);
 CREATE INDEX IF NOT EXISTS idx_calls_provider   ON public.calls(provider, provider_call_id);
 
-CREATE TRIGGER trg_calls_updated_at
-  BEFORE UPDATE ON public.calls
+DROP TRIGGER IF EXISTS trg_calls_updated_at ON public.calls;
+CREATE TRIGGER trg_calls_updated_at BEFORE UPDATE ON public.calls
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -720,8 +720,8 @@ CREATE INDEX IF NOT EXISTS idx_follow_ups_agent   ON public.follow_ups(assigned_
 CREATE INDEX IF NOT EXISTS idx_follow_ups_due     ON public.follow_ups(organization_id, due_at);
 CREATE INDEX IF NOT EXISTS idx_follow_ups_status  ON public.follow_ups(organization_id, status);
 
-CREATE TRIGGER trg_follow_ups_updated_at
-  BEFORE UPDATE ON public.follow_ups
+DROP TRIGGER IF EXISTS trg_follow_ups_updated_at ON public.follow_ups;
+CREATE TRIGGER trg_follow_ups_updated_at BEFORE UPDATE ON public.follow_ups
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- Auto-mark overdue: run as a scheduled job or DB function
@@ -806,8 +806,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_qa_reviews_updated_at ON public.qa_reviews;
-CREATE TRIGGER trg_qa_reviews_updated_at
-  BEFORE UPDATE ON public.qa_reviews
+CREATE TRIGGER trg_qa_reviews_updated_at BEFORE UPDATE ON public.qa_reviews
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
@@ -941,12 +940,15 @@ $$;
 -- ORGANIZATIONS
 -- ============================================================
 -- Super admins see all; members see their own org
+DROP POLICY IF EXISTS "orgs_select" ON public.organizations;
 CREATE POLICY "orgs_select" ON public.organizations FOR SELECT
   USING (public.is_super_admin() OR id = public.current_org_id());
 
+DROP POLICY IF EXISTS "orgs_insert" ON public.organizations;
 CREATE POLICY "orgs_insert" ON public.organizations FOR INSERT
   WITH CHECK (public.is_super_admin());
 
+DROP POLICY IF EXISTS "orgs_update" ON public.organizations;
 CREATE POLICY "orgs_update" ON public.organizations FOR UPDATE
   USING (public.is_super_admin() OR (id = public.current_org_id() AND public.has_permission('organizations.manage')))
   WITH CHECK (public.is_super_admin() OR (id = public.current_org_id() AND public.has_permission('organizations.manage')));
@@ -954,112 +956,140 @@ CREATE POLICY "orgs_update" ON public.organizations FOR UPDATE
 -- ============================================================
 -- PROFILES
 -- ============================================================
+DROP POLICY IF EXISTS "profiles_select" ON public.profiles;
 CREATE POLICY "profiles_select" ON public.profiles FOR SELECT
   USING (public.is_super_admin() OR organization_id = public.current_org_id());
 
+DROP POLICY IF EXISTS "profiles_insert" ON public.profiles;
 CREATE POLICY "profiles_insert" ON public.profiles FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND public.has_permission('users.create'));
 
+DROP POLICY IF EXISTS "profiles_update" ON public.profiles;
 CREATE POLICY "profiles_update" ON public.profiles FOR UPDATE
   USING (id = auth.uid() OR (organization_id = public.current_org_id() AND public.has_permission('users.update')));
 
 -- ============================================================
 -- USER_ROLES
 -- ============================================================
+DROP POLICY IF EXISTS "user_roles_select" ON public.user_roles;
 CREATE POLICY "user_roles_select" ON public.user_roles FOR SELECT
   USING (organization_id = public.current_org_id() OR public.is_super_admin());
 
+DROP POLICY IF EXISTS "user_roles_manage" ON public.user_roles;
 CREATE POLICY "user_roles_manage" ON public.user_roles FOR ALL
   USING (organization_id = public.current_org_id() AND public.has_permission('users.update'));
 
 -- ============================================================
 -- ROLES / PERMISSIONS / ROLE_PERMISSIONS  (read-only for all authenticated)
 -- ============================================================
-CREATE POLICY "roles_select"       ON public.roles       FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "roles_select" ON public.roles;
+CREATE POLICY "roles_select" ON public.roles       FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "permissions_select" ON public.permissions;
 CREATE POLICY "permissions_select" ON public.permissions FOR SELECT USING (auth.uid() IS NOT NULL);
-CREATE POLICY "role_perm_select"   ON public.role_permissions FOR SELECT USING (auth.uid() IS NOT NULL);
+DROP POLICY IF EXISTS "role_perm_select" ON public.role_permissions;
+CREATE POLICY "role_perm_select" ON public.role_permissions FOR SELECT USING (auth.uid() IS NOT NULL);
 
 -- ============================================================
 -- TEAMS
 -- ============================================================
+DROP POLICY IF EXISTS "teams_select" ON public.teams;
 CREATE POLICY "teams_select" ON public.teams FOR SELECT
   USING (organization_id = public.current_org_id());
 
+DROP POLICY IF EXISTS "teams_manage" ON public.teams;
 CREATE POLICY "teams_manage" ON public.teams FOR ALL
   USING (organization_id = public.current_org_id() AND public.has_permission('teams.manage'));
 
 -- ============================================================
 -- TEAM_MEMBERS
 -- ============================================================
+DROP POLICY IF EXISTS "team_members_select" ON public.team_members;
 CREATE POLICY "team_members_select" ON public.team_members FOR SELECT
   USING (organization_id = public.current_org_id());
 
+DROP POLICY IF EXISTS "team_members_manage" ON public.team_members;
 CREATE POLICY "team_members_manage" ON public.team_members FOR ALL
   USING (organization_id = public.current_org_id() AND public.has_permission('teams.manage'));
 
 -- ============================================================
 -- CUSTOMERS / CONTACT_NOTES
 -- ============================================================
+DROP POLICY IF EXISTS "customers_select" ON public.customers;
 CREATE POLICY "customers_select" ON public.customers FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('leads.read'));
 
+DROP POLICY IF EXISTS "customers_insert" ON public.customers;
 CREATE POLICY "customers_insert" ON public.customers FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND public.has_permission('leads.create'));
 
+DROP POLICY IF EXISTS "customers_update" ON public.customers;
 CREATE POLICY "customers_update" ON public.customers FOR UPDATE
   USING (organization_id = public.current_org_id() AND public.has_permission('leads.update'));
 
+DROP POLICY IF EXISTS "contact_notes_select" ON public.contact_notes;
 CREATE POLICY "contact_notes_select" ON public.contact_notes FOR SELECT
   USING (EXISTS (SELECT 1 FROM public.customers c WHERE c.id = customer_id AND c.organization_id = public.current_org_id()));
 
+DROP POLICY IF EXISTS "contact_notes_insert" ON public.contact_notes;
 CREATE POLICY "contact_notes_insert" ON public.contact_notes FOR INSERT
   WITH CHECK (EXISTS (SELECT 1 FROM public.customers c WHERE c.id = customer_id AND c.organization_id = public.current_org_id()));
 
 -- ============================================================
 -- CAMPAIGNS / LEAD_SOURCES
 -- ============================================================
+DROP POLICY IF EXISTS "campaigns_select" ON public.campaigns;
 CREATE POLICY "campaigns_select" ON public.campaigns FOR SELECT
   USING (organization_id = public.current_org_id());
 
+DROP POLICY IF EXISTS "campaigns_manage" ON public.campaigns;
 CREATE POLICY "campaigns_manage" ON public.campaigns FOR ALL
   USING (organization_id = public.current_org_id() AND public.has_permission('campaigns.manage'));
 
+DROP POLICY IF EXISTS "lead_sources_select" ON public.lead_sources;
 CREATE POLICY "lead_sources_select" ON public.lead_sources FOR SELECT
   USING (organization_id = public.current_org_id());
 
 -- ============================================================
 -- CALL_DISPOSITIONS (global lookup — all authenticated users)
 -- ============================================================
+DROP POLICY IF EXISTS "call_disp_select" ON public.call_dispositions;
 CREATE POLICY "call_disp_select" ON public.call_dispositions FOR SELECT
   USING (auth.uid() IS NOT NULL);
 
 -- ============================================================
 -- LEADS
 -- ============================================================
+DROP POLICY IF EXISTS "leads_select" ON public.leads;
 CREATE POLICY "leads_select" ON public.leads FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('leads.read'));
 
+DROP POLICY IF EXISTS "leads_insert" ON public.leads;
 CREATE POLICY "leads_insert" ON public.leads FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND public.has_permission('leads.create'));
 
+DROP POLICY IF EXISTS "leads_update" ON public.leads;
 CREATE POLICY "leads_update" ON public.leads FOR UPDATE
   USING (organization_id = public.current_org_id() AND public.has_permission('leads.update'));
 
 -- ============================================================
 -- CALLS
 -- ============================================================
+DROP POLICY IF EXISTS "calls_select" ON public.calls;
 CREATE POLICY "calls_select" ON public.calls FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('calls.read'));
 
+DROP POLICY IF EXISTS "calls_insert" ON public.calls;
 CREATE POLICY "calls_insert" ON public.calls FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND public.has_permission('calls.initiate'));
 
+DROP POLICY IF EXISTS "calls_update" ON public.calls;
 CREATE POLICY "calls_update" ON public.calls FOR UPDATE
   USING (organization_id = public.current_org_id() AND public.has_permission('calls.update'));
 
 -- ============================================================
 -- CALL_RECORDINGS
 -- ============================================================
+DROP POLICY IF EXISTS "recordings_select" ON public.call_recordings;
 CREATE POLICY "recordings_select" ON public.call_recordings FOR SELECT
   USING (
     EXISTS (
@@ -1073,52 +1103,63 @@ CREATE POLICY "recordings_select" ON public.call_recordings FOR SELECT
 -- ============================================================
 -- FOLLOW_UPS
 -- ============================================================
+DROP POLICY IF EXISTS "follow_ups_select" ON public.follow_ups;
 CREATE POLICY "follow_ups_select" ON public.follow_ups FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('leads.read'));
 
+DROP POLICY IF EXISTS "follow_ups_manage" ON public.follow_ups;
 CREATE POLICY "follow_ups_manage" ON public.follow_ups FOR ALL
   USING (organization_id = public.current_org_id() AND public.has_permission('follow_ups.manage'));
 
 -- ============================================================
 -- QA_REVIEWS
 -- ============================================================
+DROP POLICY IF EXISTS "qa_reviews_select" ON public.qa_reviews;
 CREATE POLICY "qa_reviews_select" ON public.qa_reviews FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('qa_reviews.read'));
 
+DROP POLICY IF EXISTS "qa_reviews_insert" ON public.qa_reviews;
 CREATE POLICY "qa_reviews_insert" ON public.qa_reviews FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND public.has_permission('qa_reviews.create'));
 
 -- ============================================================
 -- AUDIT_LOGS (read-only)
 -- ============================================================
+DROP POLICY IF EXISTS "audit_logs_select" ON public.audit_logs;
 CREATE POLICY "audit_logs_select" ON public.audit_logs FOR SELECT
   USING (organization_id = public.current_org_id() AND public.has_permission('audit_logs.read'));
 
 -- Only service role should insert
+DROP POLICY IF EXISTS "audit_logs_insert" ON public.audit_logs;
 CREATE POLICY "audit_logs_insert" ON public.audit_logs FOR INSERT
   WITH CHECK (false);  -- Block anon/user inserts; backend uses service role
 
 -- ============================================================
 -- NOTIFICATIONS
 -- ============================================================
+DROP POLICY IF EXISTS "notifications_select" ON public.notifications;
 CREATE POLICY "notifications_select" ON public.notifications FOR SELECT
   USING (recipient_id = auth.uid());
 
+DROP POLICY IF EXISTS "notifications_update" ON public.notifications;
 CREATE POLICY "notifications_update" ON public.notifications FOR UPDATE
   USING (recipient_id = auth.uid());
 
 -- ============================================================
 -- AGENT_STATUS_HISTORY
 -- ============================================================
+DROP POLICY IF EXISTS "agent_status_select" ON public.agent_status_history;
 CREATE POLICY "agent_status_select" ON public.agent_status_history FOR SELECT
   USING (organization_id = public.current_org_id());
 
+DROP POLICY IF EXISTS "agent_status_insert" ON public.agent_status_history;
 CREATE POLICY "agent_status_insert" ON public.agent_status_history FOR INSERT
   WITH CHECK (organization_id = public.current_org_id() AND agent_id = auth.uid());
 
 -- ============================================================
 -- WEBHOOK_EVENTS (service role only)
 -- ============================================================
+DROP POLICY IF EXISTS "webhook_events_deny_all" ON public.webhook_events;
 CREATE POLICY "webhook_events_deny_all" ON public.webhook_events FOR ALL
   USING (false);
 
@@ -1248,8 +1289,8 @@ CREATE INDEX IF NOT EXISTS idx_org_invitations_org   ON public.organization_invi
 -- Enable Row Level Security
 ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Org admins can manage invitations"
-  ON public.organization_invitations
+DROP POLICY IF EXISTS "Org admins can manage invitations" ON public.organization_invitations;
+CREATE POLICY "Org admins can manage invitations" ON public.organization_invitations
   FOR ALL
   USING (
     organization_id IN (
@@ -1303,8 +1344,8 @@ CREATE TABLE IF NOT EXISTS public.platform_admins (
 ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Only organization admins can read/create invitations for their org
-CREATE POLICY "org_admins_manage_invitations"
-  ON public.organization_invitations
+DROP POLICY IF EXISTS "org_admins_manage_invitations" ON public.organization_invitations;
+CREATE POLICY "org_admins_manage_invitations" ON public.organization_invitations
   FOR ALL
   USING (
     organization_id IN (
@@ -1321,8 +1362,8 @@ CREATE POLICY "org_admins_manage_invitations"
 ALTER TABLE public.platform_admins ENABLE ROW LEVEL SECURITY;
 
 -- Only the platform admin themselves can read their own record
-CREATE POLICY "platform_admin_self_read"
-  ON public.platform_admins
+DROP POLICY IF EXISTS "platform_admin_self_read" ON public.platform_admins;
+CREATE POLICY "platform_admin_self_read" ON public.platform_admins
   FOR SELECT
   USING (id = auth.uid());
 
@@ -1394,7 +1435,7 @@ COMMENT ON FUNCTION public.auth_org_id IS
 
 
 -- ============================================================================
--- DEFAULT SEED ORGANIZATION & BASELINE DATA
+-- DEFAULT SEED ORGANIZATIONS & BASELINE DATA
 -- ============================================================================
 INSERT INTO public.organizations (id, name, slug, status, plan)
 VALUES 
@@ -1411,7 +1452,7 @@ VALUES
   ('00000000-0000-0000-0000-000000000003', 'Lander Global Enterprises', 'lander-global', 'active', 'enterprise')
 ON CONFLICT (id) DO NOTHING;
 
--- Link all permissions to super_admin and business_admin roles
+-- Grant all granular permissions to super_admin and business_admin roles
 INSERT INTO public.role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM public.roles r
@@ -1421,4 +1462,5 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================================
 -- SETUP COMPLETED SUCCESSFULLY!
+-- All tables, triggers, RLS policies, and RBAC roles are ready.
 -- ============================================================================

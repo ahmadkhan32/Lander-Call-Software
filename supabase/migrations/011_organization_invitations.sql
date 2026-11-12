@@ -39,8 +39,8 @@ CREATE TABLE IF NOT EXISTS public.platform_admins (
 ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
 
 -- Only organization admins can read/create invitations for their org
-CREATE POLICY "org_admins_manage_invitations"
-  ON public.organization_invitations
+DROP POLICY IF EXISTS "org_admins_manage_invitations" ON public.organization_invitations;
+CREATE POLICY "org_admins_manage_invitations" ON public.organization_invitations
   FOR ALL
   USING (
     organization_id IN (
@@ -57,8 +57,8 @@ CREATE POLICY "org_admins_manage_invitations"
 ALTER TABLE public.platform_admins ENABLE ROW LEVEL SECURITY;
 
 -- Only the platform admin themselves can read their own record
-CREATE POLICY "platform_admin_self_read"
-  ON public.platform_admins
+DROP POLICY IF EXISTS "platform_admin_self_read" ON public.platform_admins;
+CREATE POLICY "platform_admin_self_read" ON public.platform_admins
   FOR SELECT
   USING (id = auth.uid());
 

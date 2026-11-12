@@ -9,7 +9,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================
 -- ORGANIZATIONS
 -- ============================================================
-CREATE TABLE public.organizations (
+CREATE TABLE IF NOT EXISTS public.organizations (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT        NOT NULL,
   slug        TEXT        NOT NULL UNIQUE,
@@ -22,14 +22,14 @@ CREATE TABLE public.organizations (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_organizations_status ON public.organizations(status);
+CREATE INDEX IF NOT EXISTS idx_organizations_status ON public.organizations(status);
 
 COMMENT ON TABLE public.organizations IS 'Top-level tenant; every resource belongs to an org';
 
 -- ============================================================
 -- SUBSCRIPTIONS
 -- ============================================================
-CREATE TABLE public.subscriptions (
+CREATE TABLE IF NOT EXISTS public.subscriptions (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   plan            TEXT        NOT NULL DEFAULT 'trial',
@@ -43,7 +43,7 @@ CREATE TABLE public.subscriptions (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_subscriptions_org ON public.subscriptions(organization_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_org ON public.subscriptions(organization_id);
 
 -- auto-update updated_at
 CREATE OR REPLACE FUNCTION public.set_updated_at()
@@ -54,10 +54,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_organizations_updated_at
-  BEFORE UPDATE ON public.organizations
+DROP TRIGGER IF EXISTS trg_organizations_updated_at ON public.organizations;
+CREATE TRIGGER trg_organizations_updated_at BEFORE UPDATE ON public.organizations
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
-CREATE TRIGGER trg_subscriptions_updated_at
-  BEFORE UPDATE ON public.subscriptions
+DROP TRIGGER IF EXISTS trg_subscriptions_updated_at ON public.subscriptions;
+CREATE TRIGGER trg_subscriptions_updated_at BEFORE UPDATE ON public.subscriptions
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

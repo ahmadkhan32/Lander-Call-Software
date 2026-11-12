@@ -6,7 +6,7 @@
 -- ============================================================
 -- CALLS
 -- ============================================================
-CREATE TABLE public.calls (
+CREATE TABLE IF NOT EXISTS public.calls (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id  UUID        NOT NULL REFERENCES public.organizations(id)  ON DELETE RESTRICT,
   lead_id          UUID        REFERENCES public.leads(id)                   ON DELETE SET NULL,
@@ -47,21 +47,21 @@ CREATE TABLE public.calls (
     ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_calls_org        ON public.calls(organization_id);
-CREATE INDEX idx_calls_lead       ON public.calls(lead_id);
-CREATE INDEX idx_calls_agent      ON public.calls(agent_id);
-CREATE INDEX idx_calls_campaign   ON public.calls(campaign_id);
-CREATE INDEX idx_calls_started    ON public.calls(organization_id, started_at DESC);
-CREATE INDEX idx_calls_provider   ON public.calls(provider, provider_call_id);
+CREATE INDEX IF NOT EXISTS idx_calls_org        ON public.calls(organization_id);
+CREATE INDEX IF NOT EXISTS idx_calls_lead       ON public.calls(lead_id);
+CREATE INDEX IF NOT EXISTS idx_calls_agent      ON public.calls(agent_id);
+CREATE INDEX IF NOT EXISTS idx_calls_campaign   ON public.calls(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_calls_started    ON public.calls(organization_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_calls_provider   ON public.calls(provider, provider_call_id);
 
-CREATE TRIGGER trg_calls_updated_at
-  BEFORE UPDATE ON public.calls
+DROP TRIGGER IF EXISTS trg_calls_updated_at ON public.calls;
+CREATE TRIGGER trg_calls_updated_at BEFORE UPDATE ON public.calls
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
 -- CALL RECORDINGS
 -- ============================================================
-CREATE TABLE public.call_recordings (
+CREATE TABLE IF NOT EXISTS public.call_recordings (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   call_id         UUID        NOT NULL REFERENCES public.calls(id) ON DELETE CASCADE,
   storage_path    TEXT        NOT NULL,
@@ -74,12 +74,12 @@ CREATE TABLE public.call_recordings (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_call_recordings_call ON public.call_recordings(call_id);
+CREATE INDEX IF NOT EXISTS idx_call_recordings_call ON public.call_recordings(call_id);
 
 -- ============================================================
 -- AGENT STATUS HISTORY
 -- ============================================================
-CREATE TABLE public.agent_status_history (
+CREATE TABLE IF NOT EXISTS public.agent_status_history (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   agent_id        UUID        NOT NULL REFERENCES public.profiles(id)      ON DELETE CASCADE,
@@ -94,13 +94,13 @@ CREATE TABLE public.agent_status_history (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_agent_status_agent ON public.agent_status_history(agent_id);
-CREATE INDEX idx_agent_status_org   ON public.agent_status_history(organization_id, started_at DESC);
+CREATE INDEX IF NOT EXISTS idx_agent_status_agent ON public.agent_status_history(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_status_org   ON public.agent_status_history(organization_id, started_at DESC);
 
 -- ============================================================
 -- WEBHOOK EVENTS (idempotency for telephony providers)
 -- ============================================================
-CREATE TABLE public.webhook_events (
+CREATE TABLE IF NOT EXISTS public.webhook_events (
   id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   provider     TEXT        NOT NULL,
   event_id     TEXT        NOT NULL,
@@ -114,5 +114,5 @@ CREATE TABLE public.webhook_events (
   UNIQUE (provider, event_id)
 );
 
-CREATE INDEX idx_webhook_events_status   ON public.webhook_events(status);
-CREATE INDEX idx_webhook_events_created  ON public.webhook_events(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_status   ON public.webhook_events(status);
+CREATE INDEX IF NOT EXISTS idx_webhook_events_created  ON public.webhook_events(created_at DESC);

@@ -119,8 +119,8 @@ CREATE INDEX IF NOT EXISTS idx_org_invitations_org   ON public.organization_invi
 -- Enable Row Level Security
 ALTER TABLE public.organization_invitations ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Org admins can manage invitations"
-  ON public.organization_invitations
+DROP POLICY IF EXISTS "Org admins can manage invitations" ON public.organization_invitations;
+CREATE POLICY "Org admins can manage invitations" ON public.organization_invitations
   FOR ALL
   USING (
     organization_id IN (

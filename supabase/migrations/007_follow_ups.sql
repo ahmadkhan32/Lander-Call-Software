@@ -3,7 +3,7 @@
 -- Description: Follow-up tasks and reminders
 -- ============================================================
 
-CREATE TABLE public.follow_ups (
+CREATE TABLE IF NOT EXISTS public.follow_ups (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id   UUID        NOT NULL REFERENCES public.organizations(id)  ON DELETE RESTRICT,
   lead_id           UUID        NOT NULL REFERENCES public.leads(id)          ON DELETE CASCADE,
@@ -30,17 +30,17 @@ CREATE TABLE public.follow_ups (
     ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_follow_ups_org     ON public.follow_ups(organization_id);
-CREATE INDEX idx_follow_ups_lead    ON public.follow_ups(lead_id);
-CREATE INDEX idx_follow_ups_agent   ON public.follow_ups(assigned_agent_id);
-CREATE INDEX idx_follow_ups_due     ON public.follow_ups(organization_id, due_at);
-CREATE INDEX idx_follow_ups_status  ON public.follow_ups(organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_follow_ups_org     ON public.follow_ups(organization_id);
+CREATE INDEX IF NOT EXISTS idx_follow_ups_lead    ON public.follow_ups(lead_id);
+CREATE INDEX IF NOT EXISTS idx_follow_ups_agent   ON public.follow_ups(assigned_agent_id);
+CREATE INDEX IF NOT EXISTS idx_follow_ups_due     ON public.follow_ups(organization_id, due_at);
+CREATE INDEX IF NOT EXISTS idx_follow_ups_status  ON public.follow_ups(organization_id, status);
 
-CREATE TRIGGER trg_follow_ups_updated_at
-  BEFORE UPDATE ON public.follow_ups
+DROP TRIGGER IF EXISTS trg_follow_ups_updated_at ON public.follow_ups;
+CREATE TRIGGER trg_follow_ups_updated_at BEFORE UPDATE ON public.follow_ups
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- Auto-mark overdue: run as a scheduled job or DB function
 -- This index supports the overdue query
-CREATE INDEX idx_follow_ups_overdue ON public.follow_ups(due_at)
+CREATE INDEX IF NOT EXISTS idx_follow_ups_overdue ON public.follow_ups(due_at)
   WHERE status = 'pending';

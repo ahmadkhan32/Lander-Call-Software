@@ -70,8 +70,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_qa_reviews_updated_at ON public.qa_reviews;
-CREATE TRIGGER trg_qa_reviews_updated_at
-  BEFORE UPDATE ON public.qa_reviews
+CREATE TRIGGER trg_qa_reviews_updated_at BEFORE UPDATE ON public.qa_reviews
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================

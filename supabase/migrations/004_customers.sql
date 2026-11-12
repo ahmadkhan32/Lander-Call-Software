@@ -3,7 +3,7 @@
 -- Description: CRM customer records with contact details
 -- ============================================================
 
-CREATE TABLE public.customers (
+CREATE TABLE IF NOT EXISTS public.customers (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   full_name       TEXT        NOT NULL,
@@ -30,18 +30,18 @@ CREATE TABLE public.customers (
   UNIQUE (organization_id, phone)
 );
 
-CREATE INDEX idx_customers_org    ON public.customers(organization_id);
-CREATE INDEX idx_customers_email  ON public.customers(organization_id, email);
-CREATE INDEX idx_customers_status ON public.customers(organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_customers_org    ON public.customers(organization_id);
+CREATE INDEX IF NOT EXISTS idx_customers_email  ON public.customers(organization_id, email);
+CREATE INDEX IF NOT EXISTS idx_customers_status ON public.customers(organization_id, status);
 
-CREATE TRIGGER trg_customers_updated_at
-  BEFORE UPDATE ON public.customers
+DROP TRIGGER IF EXISTS trg_customers_updated_at ON public.customers;
+CREATE TRIGGER trg_customers_updated_at BEFORE UPDATE ON public.customers
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
 -- CONTACT NOTES (interaction history per customer)
 -- ============================================================
-CREATE TABLE public.contact_notes (
+CREATE TABLE IF NOT EXISTS public.contact_notes (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   customer_id UUID        NOT NULL REFERENCES public.customers(id) ON DELETE CASCADE,
   author_id   UUID        NOT NULL REFERENCES public.profiles(id)  ON DELETE RESTRICT,
@@ -50,8 +50,8 @@ CREATE TABLE public.contact_notes (
   updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_contact_notes_customer ON public.contact_notes(customer_id);
+CREATE INDEX IF NOT EXISTS idx_contact_notes_customer ON public.contact_notes(customer_id);
 
-CREATE TRIGGER trg_contact_notes_updated_at
-  BEFORE UPDATE ON public.contact_notes
+DROP TRIGGER IF EXISTS trg_contact_notes_updated_at ON public.contact_notes;
+CREATE TRIGGER trg_contact_notes_updated_at BEFORE UPDATE ON public.contact_notes
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();

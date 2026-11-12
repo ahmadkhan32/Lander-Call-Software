@@ -1,6 +1,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
+function makeIdempotent(sql) {
+  // 1. Table creation
+  let res = sql.replace(/CREATE TABLE(?!\s+IF NOT EXISTS)\s+public\.(\w+)/g, 'CREATE TABLE IF NOT EXISTS public.$1');
+
+  // 2. Indexes
+  res = res.replace(/CREATE INDEX(?!\s+IF NOT EXISTS)\s+/g, 'CREATE INDEX IF NOT EXISTS ');
+  res = res.replace(/CREATE UNIQUE INDEX(?!\s+IF NOT EXISTS)\s+/g, 'CREATE UNIQUE INDEX IF NOT EXISTS ');
+
+  // 3. Triggers: match CREATE TRIGGER <name> ... ON public.<table_name>
+  res = res.replace(/DROP TRIGGER IF EXISTS\s+\w+\s+ON\s+public\.\w+;\s*/g, '');
+  res = res.replace(/CREATE TRIGGER\s+(\w+)\s+([\s\S]*?ON\s+public\.(\w+))/g, (match, trgName, rest, tblName) => {
+    return `DROP TRIGGER IF EXISTS ${trgName} ON public.${tblName};\nCREATE TRIGGER ${trgName} ${rest}`;
+  });
+
+  // 4. Policies: match CREATE POLICY <name> ... ON public.<table_name>
+  res = res.replace(/DROP POLICY IF EXISTS\s+(?:"[^"]+"|\w+)\s+ON\s+public\.\w+;\s*/g, '');
+  res = res.replace(/CREATE POLICY\s+("[^"]+"|\w+)\s+ON\s+public\.(\w+)/g, (match, polName, tblName) => {
+    return `DROP POLICY IF EXISTS ${polName} ON public.${tblName};\nCREATE POLICY ${polName} ON public.${tblName}`;
+  });
+
+  return res;
+}
+
 const migrationsDir = path.resolve('supabase/migrations');
 const migrationFiles = [
   '001_extensions_and_organizations.sql',
@@ -20,10 +43,10 @@ let allSql = `-- ===============================================================
 -- LANDER CRM & OPERATIONS PLATFORM - ALL-IN-ONE MASTER SCHEMA & SETUP
 -- Run this entire script in Supabase Studio -> SQL Editor
 -- Creates all tables, relations, triggers, RLS policies, and RBAC seeds in 1 click!
--- Completely idempotent (safe to run on fresh or existing databases).
+-- Completely idempotent (safe to run repeatedly on fresh or existing databases).
 -- ============================================================================
 
--- Extensions
+-- Ensure required PostgreSQL extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -32,13 +55,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 for (const file of migrationFiles) {
   const filePath = path.join(migrationsDir, file);
   if (fs.existsSync(filePath)) {
-    let content = fs.readFileSync(filePath, 'utf8');
+    let rawContent = fs.readFileSync(filePath, 'utf8');
+    let content = makeIdempotent(rawContent);
 
-    // Make table creation idempotent
-    content = content.replace(/CREATE TABLE public\./g, 'CREATE TABLE IF NOT EXISTS public.');
-    // Make index creation idempotent
-    content = content.replace(/CREATE INDEX (?!IF NOT EXISTS )/g, 'CREATE INDEX IF NOT EXISTS ');
-    content = content.replace(/CREATE UNIQUE INDEX (?!IF NOT EXISTS )/g, 'CREATE UNIQUE INDEX IF NOT EXISTS ');
+    // Save idempotent version back to the migration file
+    fs.writeFileSync(filePath, content, 'utf8');
 
     allSql += `\n-- >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>\n`;
     allSql += `-- MIGRATION: ${file}\n`;
@@ -49,10 +70,10 @@ for (const file of migrationFiles) {
   }
 }
 
-// Add default seed organization and ensure admin user linkage works smoothly
+// Add default seed organizations, role permissions mapping, and safety verification
 allSql += `
 -- ============================================================================
--- DEFAULT SEED ORGANIZATION & BASELINE DATA
+-- DEFAULT SEED ORGANIZATIONS & BASELINE DATA
 -- ============================================================================
 INSERT INTO public.organizations (id, name, slug, status, plan)
 VALUES 
@@ -69,7 +90,7 @@ VALUES
   ('00000000-0000-0000-0000-000000000003', 'Lander Global Enterprises', 'lander-global', 'active', 'enterprise')
 ON CONFLICT (id) DO NOTHING;
 
--- Link all permissions to super_admin and business_admin roles
+-- Grant all granular permissions to super_admin and business_admin roles
 INSERT INTO public.role_permissions (role_id, permission_id)
 SELECT r.id, p.id
 FROM public.roles r
@@ -79,6 +100,7 @@ ON CONFLICT DO NOTHING;
 
 -- ============================================================================
 -- SETUP COMPLETED SUCCESSFULLY!
+-- All tables, triggers, RLS policies, and RBAC roles are ready.
 -- ============================================================================
 `;
 

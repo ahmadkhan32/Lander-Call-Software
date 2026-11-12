@@ -6,7 +6,7 @@
 -- ============================================================
 -- LEAD SOURCES
 -- ============================================================
-CREATE TABLE public.lead_sources (
+CREATE TABLE IF NOT EXISTS public.lead_sources (
   id              UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID  NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   name            TEXT  NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE public.lead_sources (
 -- ============================================================
 -- CAMPAIGNS
 -- ============================================================
-CREATE TABLE public.campaigns (
+CREATE TABLE IF NOT EXISTS public.campaigns (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE RESTRICT,
   name            TEXT        NOT NULL,
@@ -38,17 +38,17 @@ CREATE TABLE public.campaigns (
   updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_campaigns_org    ON public.campaigns(organization_id);
-CREATE INDEX idx_campaigns_status ON public.campaigns(organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_campaigns_org    ON public.campaigns(organization_id);
+CREATE INDEX IF NOT EXISTS idx_campaigns_status ON public.campaigns(organization_id, status);
 
-CREATE TRIGGER trg_campaigns_updated_at
-  BEFORE UPDATE ON public.campaigns
+DROP TRIGGER IF EXISTS trg_campaigns_updated_at ON public.campaigns;
+CREATE TRIGGER trg_campaigns_updated_at BEFORE UPDATE ON public.campaigns
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
 -- ============================================================
 -- CALL DISPOSITIONS (outcome definitions)
 -- ============================================================
-CREATE TABLE public.call_dispositions (
+CREATE TABLE IF NOT EXISTS public.call_dispositions (
   id          UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
   name        TEXT  NOT NULL UNIQUE,
   category    TEXT  NOT NULL DEFAULT 'other'
@@ -72,7 +72,7 @@ INSERT INTO public.call_dispositions (name, category, description) VALUES
 -- ============================================================
 -- LEADS
 -- ============================================================
-CREATE TABLE public.leads (
+CREATE TABLE IF NOT EXISTS public.leads (
   id                UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id   UUID        NOT NULL REFERENCES public.organizations(id)   ON DELETE RESTRICT,
   customer_id       UUID        REFERENCES public.customers(id)                ON DELETE SET NULL,
@@ -111,13 +111,13 @@ CREATE TABLE public.leads (
     ON DELETE RESTRICT
 );
 
-CREATE INDEX idx_leads_org_status   ON public.leads(organization_id, status);
-CREATE INDEX idx_leads_assigned     ON public.leads(assigned_agent_id);
-CREATE INDEX idx_leads_campaign     ON public.leads(campaign_id);
-CREATE INDEX idx_leads_phone        ON public.leads(organization_id, phone);
-CREATE INDEX idx_leads_score        ON public.leads(organization_id, score DESC);
-CREATE INDEX idx_leads_next_contact ON public.leads(organization_id, next_contact_at);
+CREATE INDEX IF NOT EXISTS idx_leads_org_status   ON public.leads(organization_id, status);
+CREATE INDEX IF NOT EXISTS idx_leads_assigned     ON public.leads(assigned_agent_id);
+CREATE INDEX IF NOT EXISTS idx_leads_campaign     ON public.leads(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_leads_phone        ON public.leads(organization_id, phone);
+CREATE INDEX IF NOT EXISTS idx_leads_score        ON public.leads(organization_id, score DESC);
+CREATE INDEX IF NOT EXISTS idx_leads_next_contact ON public.leads(organization_id, next_contact_at);
 
-CREATE TRIGGER trg_leads_updated_at
-  BEFORE UPDATE ON public.leads
+DROP TRIGGER IF EXISTS trg_leads_updated_at ON public.leads;
+CREATE TRIGGER trg_leads_updated_at BEFORE UPDATE ON public.leads
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
