@@ -67,7 +67,8 @@ INSERT INTO public.call_dispositions (name, category, description) VALUES
   ('Busy',                        'not_contacted', 'Line was busy'),
   ('Wrong Number',                'not_contacted', 'Incorrect phone number'),
   ('Do Not Call',                 'do_not_call',   'Lead requested DNC'),
-  ('Disconnected',                'not_contacted', 'Number is disconnected');
+  ('Disconnected',                'not_contacted', 'Number is disconnected')
+ON CONFLICT (name) DO NOTHING;
 
 -- ============================================================
 -- LEADS

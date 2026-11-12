@@ -47,7 +47,8 @@ INSERT INTO public.roles (name, description) VALUES
   ('reporting_analyst',   'View performance reports, export data'),
   ('auditor',             'Read audit logs, investigate changes'),
   ('integration_admin',   'Configure telephony, webhooks, credentials'),
-  ('background_worker',   'Process reminders, imports, scheduled tasks');
+  ('background_worker',   'Process reminders, imports, scheduled tasks')
+ON CONFLICT (name) DO UPDATE SET description = EXCLUDED.description;
 
 -- ============================================================
 -- PERMISSIONS
@@ -96,7 +97,8 @@ INSERT INTO public.permissions (permission_key, description) VALUES
   -- Teams
   ('teams.manage',                  'Create / edit / delete teams'),
   -- Integrations
-  ('integrations.manage',           'Configure telephony integrations and webhooks');
+  ('integrations.manage',           'Configure telephony integrations and webhooks')
+ON CONFLICT (permission_key) DO UPDATE SET description = EXCLUDED.description;
 
 -- ============================================================
 -- USER ↔ ROLE (user may hold multiple roles in the same org)
