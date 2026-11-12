@@ -173,11 +173,63 @@ export const router = createBrowserRouter([
     path: '/auditor/dashboard',
     element: (
       <ProtectedRoute
-        allowedRoles={['auditor', 'super_admin']}
-        requiredPermission="auditor.dashboard.read"
+        allowedRoles={['auditor', 'super_admin', 'business_admin']}
+        requiredPermission="audit_logs.read"
       >
         <AppShell>
           <AuditorDashboard />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/auditor/logs',
+    element: <Navigate to="/app/audit-logs" replace />,
+  },
+  {
+    path: '/super-admin/audit-logs',
+    element: <Navigate to="/app/audit-logs" replace />,
+  },
+  {
+    path: '/admin/audit-logs',
+    element: <Navigate to="/app/audit-logs" replace />,
+  },
+  {
+    path: '/super-admin/organizations',
+    element: (
+      <ProtectedRoute allowedRoles={['super_admin']} requiredPermission="organizations.manage">
+        <AppShell>
+          <OrganizationsPage />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/super-admin/users',
+    element: (
+      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.read">
+        <AppShell>
+          <UserManagementPage />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/super-admin/invitations',
+    element: (
+      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.create">
+        <AppShell>
+          <InvitationsPage />
+        </AppShell>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/super-admin/roles',
+    element: (
+      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']}>
+        <AppShell>
+          <RolesPermissionsPage />
         </AppShell>
       </ProtectedRoute>
     ),

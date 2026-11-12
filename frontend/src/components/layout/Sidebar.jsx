@@ -67,19 +67,19 @@ export function Sidebar({ onClose }) {
     <div className="flex h-full flex-col bg-navy text-white w-64 select-none overflow-hidden">
       {/* Brand Header & Role Badge (Fixed Top) */}
       <div className="shrink-0 border-b border-slate-800">
-        <div className="flex h-16 items-center gap-3 px-6">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand text-white font-extrabold text-lg shadow-sm">
+        <div className="flex h-14 items-center gap-3 px-5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand text-white font-extrabold text-base shadow-sm">
             L
           </div>
           <div>
-            <span className="font-extrabold text-base tracking-wider text-white">LANDER</span>
+            <span className="font-extrabold text-sm tracking-wider text-white">LANDER</span>
             <span className="block text-[10px] text-slate-400 font-medium tracking-tight">CRM & Operations</span>
           </div>
         </div>
 
         {/* Current Active Role Badge */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300">
+        <div className="px-3 pb-2.5">
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60 text-[11px] text-slate-300">
             <ShieldCheck className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <span className="truncate font-semibold text-white">
               {ROLE_LABELS[userRole] || userRole}
@@ -89,7 +89,7 @@ export function Sidebar({ onClose }) {
       </div>
 
       {/* Navigation Links (Scrollable, takes 100% of remaining vertical height) */}
-      <nav className="flex-1 min-h-0 space-y-1 px-3 py-3 overflow-y-auto">
+      <nav className="flex-1 min-h-0 space-y-0.5 px-2.5 py-2 overflow-y-auto">
         {visibleNav.map((item) => {
           const Icon = item.icon;
           return (
@@ -100,24 +100,24 @@ export function Sidebar({ onClose }) {
               className={({ isActive }) => {
                 const isDashboardActive = item.label === 'Dashboard' && (location.pathname === '/app/dashboard' || location.pathname === roleDashboardRoute);
                 return cn(
-                  'flex items-center justify-between rounded-xl px-3.5 py-2.5 text-sm font-medium transition-colors',
+                  'flex items-center justify-between rounded-lg px-3 py-2 text-xs sm:text-[13px] font-medium transition-colors',
                   isActive || isDashboardActive
-                    ? 'bg-brand text-white shadow-sm'
+                    ? 'bg-brand text-white shadow-sm font-semibold'
                     : 'text-slate-300 hover:bg-slate-800/80 hover:text-white'
                 );
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 min-w-0">
                 <Icon className="w-4 h-4 shrink-0 text-slate-400 group-hover:text-white" />
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </div>
               {item.badge && (
-                <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[11px] font-semibold text-blue-300">
+                <span className="rounded-full bg-blue-500/20 px-1.5 py-0.2 text-[10px] font-semibold text-blue-300">
                   {item.badge}
                 </span>
               )}
               {item.pulse && (
-                <span className="relative flex h-2 w-2">
+                <span className="relative flex h-2 w-2 shrink-0">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
                 </span>
@@ -128,15 +128,15 @@ export function Sidebar({ onClose }) {
       </nav>
 
       {/* User profile card at bottom (Fixed Bottom, always visible!) */}
-      <div className="shrink-0 p-3 border-t border-slate-800 bg-slate-900/90">
+      <div className="shrink-0 p-2.5 border-t border-slate-800 bg-slate-900/95">
         <div className="flex items-center justify-between p-2 rounded-xl bg-slate-800/50">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-xs font-bold text-white shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 text-xs font-bold text-white shrink-0">
               {user?.name?.slice(0, 2).toUpperCase() || 'SA'}
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-white truncate">{user?.name || 'Sarah Miller'}</p>
-              <p className="text-[11px] text-slate-400 truncate">{ROLE_LABELS[userRole] || userRole}</p>
+              <p className="text-[10px] text-slate-400 truncate">{ROLE_LABELS[userRole] || userRole}</p>
             </div>
           </div>
           <button

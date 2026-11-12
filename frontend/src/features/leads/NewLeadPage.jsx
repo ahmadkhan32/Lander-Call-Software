@@ -1,7 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
@@ -9,6 +8,24 @@ import { Select } from '../../components/ui/Select';
 import { Button } from '../../components/ui/Button';
 import { ArrowLeft, Save } from 'lucide-react';
 import { useToast } from '../../components/ui/Toast';
+
+const zodResolver = (schema) => async (values) => {
+  try {
+    const data = await schema.parseAsync(values);
+    return { values: data, errors: {} };
+  } catch (error) {
+    const errors = {};
+    if (error?.issues) {
+      for (const issue of error.issues) {
+        const path = issue.path[0];
+        if (path && !errors[path]) {
+          errors[path] = { type: issue.code, message: issue.message };
+        }
+      }
+    }
+    return { values: {}, errors };
+  }
+};
 
 const leadSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),

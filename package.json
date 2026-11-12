@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "npm --prefix frontend run dev",
-    "build": "cd frontend && npm install && npm run build && cd .. && node -e \"const fs=require('fs'); if(fs.existsSync('dist')) fs.rmSync('dist', {recursive:true,force:true}); if(fs.existsSync('frontend/dist')) fs.cpSync('frontend/dist', 'dist', {recursive:true});\"",
+    "build": "cd frontend && npm run build && cd .. && node scripts/copy-dist.js",
     "preview": "npm --prefix frontend run preview",
     "backend:dev": "npm --prefix backend run dev",
     "backend:start": "npm --prefix backend run start"

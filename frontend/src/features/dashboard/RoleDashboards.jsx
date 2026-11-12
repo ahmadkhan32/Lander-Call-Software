@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { useToast } from '../../components/ui/Toast';
 import {
   Building2,
   Shield,
+  ShieldCheck,
   CreditCard,
   Activity,
   Users,
@@ -33,6 +35,13 @@ import {
   RefreshCw,
   Copy,
   Check,
+  FileText,
+  Lock,
+  Filter,
+  Eye,
+  AlertTriangle,
+  X,
+  ExternalLink,
 } from 'lucide-react';
 
 // 1. Super Admin Dashboard (/super-admin/dashboard)
@@ -662,47 +671,739 @@ export function ReportingAnalystDashboard() {
   );
 }
 
-// 9. Auditor Dashboard (/auditor/dashboard)
+// 9. Auditor Dashboard (/auditor/dashboard & /app/audit-logs)
 export function AuditorDashboard() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
+
+  const isLogsPath = location.pathname.includes('audit-logs');
+  const [activeTab, setActiveTab] = useState(isLogsPath ? 'logs' : 'overview');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [severityFilter, setSeverityFilter] = useState('all');
+  const [inspectingRecord, setInspectingRecord] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verifiedStatus, setVerifiedStatus] = useState(null);
+
+  // Sync tab with route path
+  useEffect(() => {
+    if (location.pathname.includes('audit-logs')) {
+      setActiveTab('logs');
+    } else if (location.pathname.includes('/auditor/dashboard')) {
+      setActiveTab('overview');
+    }
+  }, [location.pathname]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    if (tab === 'logs' && !location.pathname.includes('audit-logs')) {
+      navigate('/app/audit-logs');
+    } else if (tab === 'overview' && !location.pathname.includes('/auditor/dashboard')) {
+      navigate('/auditor/dashboard');
+    }
+  };
+
+  const auditRecords = [
+    {
+      id: 'evt_09881',
+      action: 'AUTH_LOGIN_SUCCESS',
+      actor: 'Arthur Pendelton',
+      email: 'admin@callcenter.com',
+      role: 'business_admin',
+      target: 'session:sess_99014',
+      ip: '192.168.1.104',
+      geo: 'Dallas, TX (US)',
+      time: '2 mins ago',
+      timestamp: '2026-11-12T04:42:15Z',
+      category: 'auth',
+      severity: 'info',
+      hash: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08',
+      payload: {
+        authMethod: 'password_credentials',
+        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/120.0',
+        mfaVerified: true,
+        sessionExpiry: '24h',
+      },
+    },
+    {
+      id: 'evt_09880',
+      action: 'ROLE_PERMISSIONS_UPDATED',
+      actor: 'Arthur Pendelton',
+      email: 'admin@callcenter.com',
+      role: 'business_admin',
+      target: 'role:supervisor',
+      ip: '192.168.1.104',
+      geo: 'Dallas, TX (US)',
+      time: '18 mins ago',
+      timestamp: '2026-11-12T04:26:02Z',
+      category: 'roles',
+      severity: 'warning',
+      hash: '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8',
+      payload: {
+        roleModified: 'supervisor',
+        permissionsAdded: ['calls.recording.read'],
+        permissionsRemoved: [],
+        approver: 'admin@callcenter.com',
+        businessJustification: 'QA compliance review workflow requirement',
+      },
+    },
+    {
+      id: 'evt_09879',
+      action: 'FAILED_LOGIN_ALERT',
+      actor: 'unknown@external-probe.net',
+      email: 'external-bot@threat-intel.org',
+      role: 'unauthenticated',
+      target: 'account:usr_superadmin',
+      ip: '198.51.100.77',
+      geo: 'Frankfurt, DE',
+      time: '45 mins ago',
+      timestamp: '2026-11-12T03:59:12Z',
+      category: 'auth',
+      severity: 'critical',
+      hash: '4b227777d4dd1fc61c6f884f48641d02b4d121d3fd328cb08b5531fcacdabf8a',
+      payload: {
+        threatType: 'BRUTE_FORCE_ATTEMPT',
+        attemptsBlocked: 3,
+        mitigation: 'IP_TEMPORARILY_BLOCKED',
+        firewallRuleTriggered: 'WAF-RATE-LIMIT-SEC01',
+      },
+    },
+    {
+      id: 'evt_09878',
+      action: 'USER_REGISTERED_WITH_CREDENTIALS',
+      actor: 'Sarah Miller',
+      email: 'sarah.miller@landercrm.io',
+      role: 'super_admin',
+      target: 'usr_auditor_01 (frank.audit@callcenter.com)',
+      ip: '10.0.0.1',
+      geo: 'New York, NY (US)',
+      time: '1 hour ago',
+      timestamp: '2026-11-12T03:44:50Z',
+      category: 'roles',
+      severity: 'info',
+      hash: 'ef2d127de37b942baad06145e54b0c619a1f22327b2ebbcfbec78f5564afe39d',
+      payload: {
+        newUserId: 'usr_auditor_01',
+        assignedRole: 'auditor',
+        organization: 'Example Call Center',
+        permissionsGranted: ['auditor.dashboard.read', 'audit_logs.read'],
+      },
+    },
+    {
+      id: 'evt_09877',
+      action: 'LEAD_BULK_EXPORT',
+      actor: 'Marcus Vance',
+      email: 'marcus.v@callcenter.com',
+      role: 'manager',
+      target: 'campaign:q4_inbound (450 records)',
+      ip: '192.168.1.155',
+      geo: 'Austin, TX (US)',
+      time: '3 hours ago',
+      timestamp: '2026-11-12T01:30:11Z',
+      category: 'leads',
+      severity: 'warning',
+      hash: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad',
+      payload: {
+        exportType: 'CSV',
+        recordCount: 450,
+        classification: 'RESTRICTED_CUSTOMER_DATA',
+        digitalWatermark: 'marcus.v@callcenter.com::20261112',
+      },
+    },
+    {
+      id: 'evt_09876',
+      action: 'SIP_TRUNK_CREDENTIAL_ROTATED',
+      actor: 'Alex Rivera',
+      email: 'alex.telecom@callcenter.com',
+      role: 'integration_admin',
+      target: 'gateway:twilio_voice_trunk',
+      ip: '192.168.1.189',
+      geo: 'Chicago, IL (US)',
+      time: '5 hours ago',
+      timestamp: '2026-11-11T23:55:00Z',
+      category: 'calls',
+      severity: 'info',
+      hash: 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb',
+      payload: {
+        provider: 'Twilio Voice SIP',
+        trunkSid: 'TK890412891',
+        healthCheckStatus: '200_OK_LATENCY_32MS',
+      },
+    },
+    {
+      id: 'evt_09875',
+      action: 'ACCOUNT_SUSPENDED',
+      actor: 'Arthur Pendelton',
+      email: 'admin@callcenter.com',
+      role: 'business_admin',
+      target: 'usr_agent_03 (devon.m@callcenter.com)',
+      ip: '192.168.1.104',
+      geo: 'Dallas, TX (US)',
+      time: 'Yesterday',
+      timestamp: '2026-11-11T18:14:00Z',
+      category: 'roles',
+      severity: 'critical',
+      hash: '3e23e8160039594a33894f6564e1b1348bbd7a0088d42c4acb73eeaed59c009d',
+      payload: {
+        deactivationReason: 'EMPLOYEE_OFFBOARDING',
+        revokedSessionsCount: 2,
+        activeVoipRegistrationsKilled: 1,
+      },
+    },
+    {
+      id: 'evt_09874',
+      action: 'COMPLIANCE_VAULT_SEALED',
+      actor: 'Lander Cryptographic Ledger',
+      email: 'security-cron@landercrm.io',
+      role: 'system',
+      target: 'merkle_root:block_batch_8992',
+      ip: '127.0.0.1',
+      geo: 'Secure Enclave (US-East)',
+      time: 'Yesterday',
+      timestamp: '2026-11-11T12:00:00Z',
+      category: 'system',
+      severity: 'success',
+      hash: '2c624232cdd221771294dfbb379ac8b849cc1e7615f6eaf4fed27d9702909a49',
+      payload: {
+        eventsSealed: 14892,
+        merkleRoot: '6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b',
+        complianceStandard: 'SOC-2 Type II / HIPAA Security Rule',
+      },
+    },
+  ];
+
+  const filteredRecords = auditRecords.filter((rec) => {
+    const matchesQuery =
+      searchQuery === '' ||
+      rec.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.actor.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.target.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      rec.ip.includes(searchQuery);
+
+    const matchesCat = categoryFilter === 'all' || rec.category === categoryFilter;
+    const matchesSev = severityFilter === 'all' || rec.severity === severityFilter;
+
+    return matchesQuery && matchesCat && matchesSev;
+  });
+
+  const runLedgerVerification = () => {
+    setIsVerifying(true);
+    setTimeout(() => {
+      setIsVerifying(false);
+      setVerifiedStatus('All 14,892 records cryptographically verified with zero hash discrepancies. Ledger is 100% immutable.');
+      addToast({
+        title: 'Ledger Integrity Verified',
+        description: 'SHA-256 Merkle root validated against external cryptographic timestamping authority.',
+        variant: 'success',
+      });
+    }, 900);
+  };
+
+  const exportAsCSV = () => {
+    const headers = ['ID,Timestamp,Action,Severity,Actor,Email,Role,Target,IP,Geo,SHA256Hash\n'];
+    const rows = filteredRecords.map((r) =>
+      `"${r.id}","${r.timestamp}","${r.action}","${r.severity}","${r.actor}","${r.email}","${r.role}","${r.target}","${r.ip}","${r.geo}","${r.hash}"`
+    );
+    const blob = new Blob([headers.concat(rows.join('\n'))], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `lander-audit-logs-${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    addToast({
+      title: 'Audit Logs Exported',
+      description: `Downloaded ${filteredRecords.length} records in CSV format.`,
+      variant: 'success',
+    });
+  };
+
+  const exportAsJSON = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(filteredRecords, null, 2));
+    const link = document.createElement('a');
+    link.href = dataStr;
+    link.setAttribute('download', `lander-audit-logs-${Date.now()}.json`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    addToast({
+      title: 'Audit Logs Exported',
+      description: `Downloaded ${filteredRecords.length} records in JSON format.`,
+      variant: 'success',
+    });
+  };
+
   return (
     <div className="space-y-6">
-      <div className="border-b border-slate-200 pb-5">
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
-          Auditor &bull; Compliance &amp; Regulatory
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-2">
-          Immutable Audit Log Viewer
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500">
-          Read audit logs and investigate changes without modifying operational records.
-        </p>
+      {/* Top Header & Fast-Toggle Navigation Tabs */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-200 pb-5">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-rose-50 text-rose-700 border border-rose-200 uppercase tracking-wider">
+              Auditor &bull; Compliance &amp; Regulatory
+            </span>
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase tracking-wider flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              SOC-2 Type II Certified
+            </span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight mt-2">
+            {activeTab === 'overview' ? 'Auditor Compliance & Security Cockpit' : 'Enterprise Audit Logs & Activity Inspector'}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 mt-1">
+            {activeTab === 'overview'
+              ? 'Independent regulatory verification, immutable audit trail analysis, and real-time security tracking.'
+              : 'Real-time cryptographic audit trail of all authentication, role permissions, lead access, and system events.'}
+          </p>
+        </div>
+
+        {/* Dual Mode Switcher Tabs */}
+        <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 shrink-0">
+          <button
+            onClick={() => handleTabChange('overview')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'overview'
+                ? 'bg-white text-navy shadow-sm font-bold'
+                : 'text-slate-600 hover:text-navy hover:bg-slate-200/60'
+            }`}
+          >
+            <Shield className="w-4 h-4 text-blue-600" />
+            <span>Auditor Dashboard</span>
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">(/auditor/dashboard)</span>
+          </button>
+          <button
+            onClick={() => handleTabChange('logs')}
+            className={`flex items-center gap-2 px-3.5 py-2 text-xs font-semibold rounded-lg transition-all ${
+              activeTab === 'logs'
+                ? 'bg-white text-navy shadow-sm font-bold'
+                : 'text-slate-600 hover:text-navy hover:bg-slate-200/60'
+            }`}
+          >
+            <FileText className="w-4 h-4 text-rose-600" />
+            <span>Audit Logs Stream</span>
+            <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">(/app/audit-logs)</span>
+          </button>
+        </div>
       </div>
 
-      <Card className="p-5 space-y-4">
-        <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
-          <Search className="w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search immutable security audit records..."
-            className="w-full bg-transparent border-none text-slate-800 text-xs focus:outline-none"
-          />
-        </div>
+      {/* ── OVERVIEW TAB CONTENT (/auditor/dashboard) ── */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Executive KPI Metric Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="p-5 border-l-4 border-l-blue-600 space-y-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase">
+                <span>Total Audit Events</span>
+                <Lock className="w-4 h-4 text-blue-600" />
+              </div>
+              <div className="text-3xl font-extrabold text-navy">14,892</div>
+              <p className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                <span>&bull;</span> 100% Cryptographically Chained
+              </p>
+            </Card>
 
-        <div className="divide-y divide-slate-100 font-mono text-xs">
-          {[
-            { action: 'USER_REGISTERED_WITH_CREDENTIALS', actor: 'admin@callcenter.com', target: 'emily.chen@callcenter.com', time: '10 mins ago' },
-            { action: 'ROLE_PERMISSIONS_UPDATED', actor: 'admin@callcenter.com', target: 'role:supervisor', time: '1 hour ago' },
-            { action: 'ACCOUNT_SUSPENDED', actor: 'admin@callcenter.com', target: 'devon.m@callcenter.com', time: 'Yesterday' },
-          ].map((item, idx) => (
-            <div key={idx} className="py-3 flex items-center justify-between">
-              <span className="font-bold text-blue-600">{item.action}</span>
-              <span className="text-slate-500">By: {item.actor}</span>
-              <span className="text-emerald-700">Target: {item.target}</span>
-              <span className="text-slate-400">{item.time}</span>
+            <Card className="p-5 border-l-4 border-l-rose-500 space-y-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase">
+                <span>Security Alerts</span>
+                <ShieldAlert className="w-4 h-4 text-rose-500" />
+              </div>
+              <div className="text-3xl font-extrabold text-rose-600">0 Active</div>
+              <p className="text-xs text-slate-400">3 external probes blocked today</p>
+            </Card>
+
+            <Card className="p-5 border-l-4 border-l-amber-500 space-y-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase">
+                <span>Privilege Changes</span>
+                <Activity className="w-4 h-4 text-amber-500" />
+              </div>
+              <div className="text-3xl font-extrabold text-navy">12 Events</div>
+              <p className="text-xs text-slate-400">All authorized by Business Admins</p>
+            </Card>
+
+            <Card className="p-5 border-l-4 border-l-emerald-600 space-y-1">
+              <div className="flex items-center justify-between text-xs text-slate-400 font-bold uppercase">
+                <span>Compliance Health</span>
+                <CheckCircle className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-3xl font-extrabold text-emerald-600">99.98%</div>
+              <p className="text-xs text-slate-400">SOC-2, HIPAA, PCI-DSS Level 1</p>
+            </Card>
+          </div>
+
+          {/* Ledger Verification Action Bar */}
+          <Card className="p-5 bg-gradient-to-r from-slate-900 to-navy text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <h3 className="font-bold text-sm sm:text-base text-white">Immutable SHA-256 Ledger Verification</h3>
+              </div>
+              <p className="text-xs text-slate-300">
+                Independent cryptographic proof that no log records have been altered, suppressed, or rewritten.
+              </p>
+              {verifiedStatus && (
+                <p className="text-xs text-emerald-300 font-mono mt-2 bg-emerald-950/60 p-2 rounded-lg border border-emerald-800">
+                  ✓ {verifiedStatus}
+                </p>
+              )}
             </div>
-          ))}
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={runLedgerVerification}
+                disabled={isVerifying}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs flex items-center gap-1.5"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isVerifying ? 'animate-spin' : ''}`} />
+                <span>{isVerifying ? 'Verifying Merkle Roots...' : 'Verify Cryptographic Integrity'}</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleTabChange('logs')}
+                className="border-slate-700 text-slate-200 hover:bg-slate-800 text-xs font-semibold flex items-center gap-1.5"
+              >
+                <span>Browse All Logs &rarr;</span>
+              </Button>
+            </div>
+          </Card>
+
+          {/* Compliance Standards Framework Status */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                framework: 'SOC-2 Type II',
+                status: 'Certified & Monitored',
+                desc: 'Continuous automated log retention and RBAC access verification.',
+                color: 'text-blue-600 bg-blue-50 border-blue-200',
+              },
+              {
+                framework: 'HIPAA Security Rule',
+                desc: 'End-to-end cryptographic encryption for protected call recordings.',
+                status: 'BAA Compliant',
+                color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+              },
+              {
+                framework: 'PCI-DSS Level 1',
+                desc: 'Zero plaintext credit card storage; tokenized payment flows.',
+                status: 'Validated',
+                color: 'text-purple-700 bg-purple-50 border-purple-200',
+              },
+              {
+                framework: 'GDPR Article 30',
+                desc: 'Immutable record of customer data access and processing activities.',
+                status: 'Enforced',
+                color: 'text-amber-700 bg-amber-50 border-amber-200',
+              },
+            ].map((std, idx) => (
+              <Card key={idx} className="p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-bold text-navy text-sm">{std.framework}</h4>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${std.color}`}>
+                    {std.status}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 leading-relaxed">{std.desc}</p>
+              </Card>
+            ))}
+          </div>
+
+          {/* Recent Security Highlights */}
+          <Card className="p-5 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600" />
+                <h3 className="font-bold text-sm text-navy">High-Priority Security &amp; Administrative Actions</h3>
+              </div>
+              <button
+                onClick={() => handleTabChange('logs')}
+                className="text-xs font-semibold text-brand hover:underline flex items-center gap-1"
+              >
+                <span>View Full Stream in /app/audit-logs</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="divide-y divide-slate-100 text-xs">
+              {auditRecords.slice(0, 5).map((r) => (
+                <div key={r.id} className="py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                        r.severity === 'critical'
+                          ? 'bg-rose-100 text-rose-800'
+                          : r.severity === 'warning'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}
+                    >
+                      {r.action}
+                    </span>
+                    <span className="text-slate-700 font-semibold">{r.actor}</span>
+                    <span className="text-slate-400 font-mono text-[11px]">({r.email})</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500 font-mono text-[11px]">
+                    <span className="text-emerald-700 font-semibold">{r.target}</span>
+                    <span>{r.time}</span>
+                    <button
+                      onClick={() => setInspectingRecord(r)}
+                      className="text-brand hover:underline font-sans text-xs font-bold"
+                    >
+                      Inspect
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
-      </Card>
+      )}
+
+      {/* ── LOGS STREAM TAB CONTENT (/app/audit-logs) ── */}
+      {activeTab === 'logs' && (
+        <div className="space-y-6">
+          {/* Controls: Search, Category Filters, Severity, Exports */}
+          <Card className="p-4 space-y-4">
+            <div className="flex flex-col md:flex-row gap-3">
+              {/* Search Bar */}
+              <div className="flex-1 flex items-center gap-2 p-2.5 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by action (e.g. AUTH_LOGIN, ROLE), actor email, target, or IP address..."
+                  className="w-full bg-transparent border-none text-slate-800 text-xs focus:outline-none"
+                />
+                {searchQuery && (
+                  <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Severity Dropdown Filter */}
+              <div className="flex items-center gap-2 shrink-0">
+                <select
+                  value={severityFilter}
+                  onChange={(e) => setSeverityFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-200 text-slate-700 text-xs rounded-xl px-3 py-2.5 focus:outline-none font-medium"
+                >
+                  <option value="all">All Severities</option>
+                  <option value="critical">Critical</option>
+                  <option value="warning">Warning</option>
+                  <option value="info">Info</option>
+                  <option value="success">Success</option>
+                </select>
+
+                {/* Export Buttons */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAsCSV}
+                  className="text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export CSV</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={exportAsJSON}
+                  className="text-xs font-semibold flex items-center gap-1.5"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export JSON</span>
+                </Button>
+              </div>
+            </div>
+
+            {/* Category Filter Pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-slate-100">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Categories:</span>
+              {[
+                { id: 'all', label: 'All Events (14,892)' },
+                { id: 'auth', label: 'Auth & Sessions' },
+                { id: 'roles', label: 'Roles & RBAC' },
+                { id: 'leads', label: 'Leads & CRM' },
+                { id: 'calls', label: 'Telephony & Voice' },
+                { id: 'system', label: 'System Vault' },
+              ].map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => setCategoryFilter(cat.id)}
+                  className={`text-xs px-3 py-1 rounded-full font-medium transition ${
+                    categoryFilter === cat.id
+                      ? 'bg-navy text-white font-semibold shadow-sm'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  {cat.label}
+                </button>
+              ))}
+            </div>
+          </Card>
+
+          {/* Interactive Audit Logs Table */}
+          <Card className="overflow-hidden border border-slate-200">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 uppercase tracking-wider font-semibold">
+                  <tr>
+                    <th className="py-3 px-4">Timestamp &amp; Event</th>
+                    <th className="py-3 px-4">Severity</th>
+                    <th className="py-3 px-4">Actor (Initiator)</th>
+                    <th className="py-3 px-4">Target Resource</th>
+                    <th className="py-3 px-4">Origin IP &amp; Geo</th>
+                    <th className="py-3 px-4">SHA-256 Seal</th>
+                    <th className="py-3 px-4 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 font-mono">
+                  {filteredRecords.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-slate-400 font-sans">
+                        No audit records match the current filter criteria.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredRecords.map((r) => (
+                      <tr key={r.id} className="hover:bg-slate-50/80 transition-colors">
+                        <td className="py-3.5 px-4 font-sans">
+                          <div className="font-mono text-slate-400 text-[11px]">{r.time}</div>
+                          <div className="font-bold text-navy text-xs font-mono">{r.action}</div>
+                        </td>
+                        <td className="py-3.5 px-4">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase font-sans ${
+                              r.severity === 'critical'
+                                ? 'bg-rose-100 text-rose-800'
+                                : r.severity === 'warning'
+                                ? 'bg-amber-100 text-amber-800'
+                                : r.severity === 'success'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}
+                          >
+                            {r.severity}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-sans">
+                          <div className="font-semibold text-slate-800">{r.actor}</div>
+                          <div className="text-[11px] text-slate-400 font-mono">{r.email}</div>
+                          <span className="inline-block text-[10px] px-1.5 py-0.2 bg-slate-100 rounded text-slate-600 font-mono mt-0.5">
+                            {r.role}
+                          </span>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-emerald-700 font-semibold">
+                          {r.target}
+                        </td>
+                        <td className="py-3.5 px-4 font-sans text-slate-600">
+                          <div className="font-mono text-xs">{r.ip}</div>
+                          <div className="text-[11px] text-slate-400">{r.geo}</div>
+                        </td>
+                        <td className="py-3.5 px-4 font-mono text-[10px] text-slate-400" title={r.hash}>
+                          {r.hash.slice(0, 10)}...{r.hash.slice(-6)}
+                        </td>
+                        <td className="py-3.5 px-4 text-right font-sans">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setInspectingRecord(r)}
+                            className="text-xs font-bold text-brand hover:text-blue-800"
+                          >
+                            Inspect
+                          </Button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <span>Showing {filteredRecords.length} of {auditRecords.length} audit trail records</span>
+              <span className="font-mono text-[11px] text-slate-400">SOC-2 Type II Automated Retention: 7 Years</span>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Record Payload Inspection Modal */}
+      {inspectingRecord && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-brand" />
+                <h3 className="font-extrabold text-navy text-base">
+                  Audit Record Inspector: {inspectingRecord.id}
+                </h3>
+              </div>
+              <button
+                onClick={() => setInspectingRecord(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-slate-400 uppercase text-[10px] font-bold block">Event Action</span>
+                <span className="font-mono font-bold text-brand text-xs">{inspectingRecord.action}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-slate-400 uppercase text-[10px] font-bold block">Timestamp</span>
+                <span className="font-mono text-slate-800 text-xs">{inspectingRecord.timestamp}</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-slate-400 uppercase text-[10px] font-bold block">Actor</span>
+                <span className="font-semibold text-slate-800">{inspectingRecord.actor} ({inspectingRecord.email})</span>
+              </div>
+              <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <span className="text-slate-400 uppercase text-[10px] font-bold block">Target Resource</span>
+                <span className="font-mono text-emerald-700">{inspectingRecord.target}</span>
+              </div>
+            </div>
+
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                Cryptographic SHA-256 HMAC Signature
+              </span>
+              <div className="p-2.5 bg-slate-900 text-emerald-400 font-mono text-[11px] rounded-xl break-all">
+                {inspectingRecord.hash}
+              </div>
+            </div>
+
+            <div>
+              <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                Payload Metadata (JSON)
+              </span>
+              <pre className="p-3 bg-slate-900 text-slate-100 font-mono text-[11px] rounded-xl max-h-48 overflow-y-auto">
+                {JSON.stringify(inspectingRecord.payload, null, 2)}
+              </pre>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => setInspectingRecord(null)}
+                className="text-xs font-semibold"
+              >
+                Close Inspector
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -104,7 +104,7 @@ export const PERMISSIONS = {
   VIEW_CRM_DASHBOARD: ['crm_manager', 'business_admin', 'super_admin'],
   VIEW_QA_DASHBOARD: ['qa_officer', 'business_admin', 'super_admin'],
   VIEW_REPORTS_DASHBOARD: ['reporting_analyst', 'manager', 'business_admin', 'super_admin'],
-  VIEW_AUDITOR_DASHBOARD: ['auditor', 'super_admin'],
+  VIEW_AUDITOR_DASHBOARD: ['auditor', 'super_admin', 'business_admin'],
   VIEW_INTEGRATIONS_DASHBOARD: ['integration_admin', 'business_admin', 'super_admin'],
 
   VIEW_DASHBOARD: [
