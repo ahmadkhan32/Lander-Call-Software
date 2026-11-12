@@ -3,10 +3,40 @@
 -- Description: QA reviews, audit logs, notifications
 -- ============================================================
 
+-- Ensure required extensions
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Ensure prerequisite parent tables exist
+CREATE TABLE IF NOT EXISTS public.organizations (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT        NOT NULL,
+  slug        TEXT        NOT NULL UNIQUE,
+  status      TEXT        NOT NULL DEFAULT 'active',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id              UUID        PRIMARY KEY,
+  organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  full_name       TEXT        NOT NULL,
+  status          TEXT        NOT NULL DEFAULT 'active',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.calls (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id UUID        NOT NULL REFERENCES public.organizations(id) ON DELETE CASCADE,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- ============================================================
 -- QA REVIEWS
 -- ============================================================
-CREATE TABLE public.qa_reviews (
+CREATE TABLE IF NOT EXISTS public.qa_reviews (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        NOT NULL REFERENCES public.organizations(id)  ON DELETE RESTRICT,
   call_id         UUID        NOT NULL REFERENCES public.calls(id)          ON DELETE CASCADE,
@@ -27,10 +57,19 @@ CREATE TABLE public.qa_reviews (
   UNIQUE (call_id, reviewer_id)
 );
 
-CREATE INDEX idx_qa_reviews_call     ON public.qa_reviews(call_id);
-CREATE INDEX idx_qa_reviews_agent    ON public.qa_reviews(agent_id);
-CREATE INDEX idx_qa_reviews_org      ON public.qa_reviews(organization_id);
+CREATE INDEX IF NOT EXISTS idx_qa_reviews_call     ON public.qa_reviews(call_id);
+CREATE INDEX IF NOT EXISTS idx_qa_reviews_agent    ON public.qa_reviews(agent_id);
+CREATE INDEX IF NOT EXISTS idx_qa_reviews_org      ON public.qa_reviews(organization_id);
 
+CREATE OR REPLACE FUNCTION public.set_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_qa_reviews_updated_at ON public.qa_reviews;
 CREATE TRIGGER trg_qa_reviews_updated_at
   BEFORE UPDATE ON public.qa_reviews
   FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
@@ -38,7 +77,7 @@ CREATE TRIGGER trg_qa_reviews_updated_at
 -- ============================================================
 -- AUDIT LOGS
 -- ============================================================
-CREATE TABLE public.audit_logs (
+CREATE TABLE IF NOT EXISTS public.audit_logs (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        REFERENCES public.organizations(id) ON DELETE SET NULL,
   actor_id        UUID        REFERENCES public.profiles(id)      ON DELETE SET NULL,
@@ -53,16 +92,16 @@ CREATE TABLE public.audit_logs (
 );
 
 -- Partitioning hint: consider range partitioning by created_at for large volumes
-CREATE INDEX idx_audit_logs_org      ON public.audit_logs(organization_id);
-CREATE INDEX idx_audit_logs_actor    ON public.audit_logs(actor_id);
-CREATE INDEX idx_audit_logs_action   ON public.audit_logs(action);
-CREATE INDEX idx_audit_logs_created  ON public.audit_logs(created_at DESC);
-CREATE INDEX idx_audit_logs_resource ON public.audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_org      ON public.audit_logs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor    ON public.audit_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_action   ON public.audit_logs(action);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created  ON public.audit_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON public.audit_logs(resource_type, resource_id);
 
 -- ============================================================
 -- NOTIFICATIONS
 -- ============================================================
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   organization_id UUID        REFERENCES public.organizations(id) ON DELETE CASCADE,
   recipient_id    UUID        NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
@@ -80,5 +119,5 @@ CREATE TABLE public.notifications (
   created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_notifications_recipient ON public.notifications(recipient_id, status);
-CREATE INDEX idx_notifications_created   ON public.notifications(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON public.notifications(recipient_id, status);
+CREATE INDEX IF NOT EXISTS idx_notifications_created   ON public.notifications(created_at DESC);

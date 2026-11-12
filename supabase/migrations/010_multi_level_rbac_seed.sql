@@ -7,6 +7,48 @@
 -- Ensure uuid-ossp extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Ensure prerequisite tables exist
+CREATE TABLE IF NOT EXISTS public.organizations (
+  id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT        NOT NULL,
+  slug        TEXT        NOT NULL UNIQUE,
+  status      TEXT        NOT NULL DEFAULT 'active',
+  plan        TEXT        NOT NULL DEFAULT 'trial',
+  settings    JSONB       NOT NULL DEFAULT '{}',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id              UUID        PRIMARY KEY,
+  organization_id UUID        NOT NULL,
+  full_name       TEXT        NOT NULL,
+  phone           TEXT,
+  avatar_url      TEXT,
+  status          TEXT        NOT NULL DEFAULT 'active',
+  timezone        TEXT        NOT NULL DEFAULT 'UTC',
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS public.roles (
+  id          UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
+  name        TEXT  NOT NULL UNIQUE,
+  description TEXT
+);
+
+CREATE TABLE IF NOT EXISTS public.permissions (
+  id             UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
+  permission_key TEXT  NOT NULL UNIQUE,
+  description    TEXT
+);
+
+CREATE TABLE IF NOT EXISTS public.role_permissions (
+  role_id       UUID NOT NULL REFERENCES public.roles(id) ON DELETE CASCADE,
+  permission_id UUID NOT NULL REFERENCES public.permissions(id) ON DELETE CASCADE,
+  PRIMARY KEY (role_id, permission_id)
+);
+
 -- Ensure 10 System Roles exist
 INSERT INTO public.roles (name, description) VALUES
   ('super_admin',         'Platform-wide administration, global configuration and subscriptions'),

@@ -7,3 +7,4 @@ if (fs.existsSync('frontend/dist')) {
   fs.cpSync('frontend/dist', 'dist', { recursive: true });
   console.log('Successfully synced frontend/dist to root dist/');
 }
+
