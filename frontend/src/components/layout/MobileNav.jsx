@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, Users, Headphones, BarChart2, User } from 'lucide-react';
+import { Home, Users, Headphones, MessageSquare, BarChart2 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export function MobileNav() {
@@ -8,8 +8,8 @@ export function MobileNav() {
     { label: 'Home', icon: Home, path: '/app/dashboard' },
     { label: 'Leads', icon: Users, path: '/app/leads' },
     { label: 'Dialer', icon: Headphones, path: '/app/dialer' },
+    { label: 'WhatsApp', icon: MessageSquare, path: '/app/whatsapp' },
     { label: 'Reports', icon: BarChart2, path: '/app/reports' },
-    { label: 'Profile', icon: User, path: '/app/settings' },
   ];
 
   return (

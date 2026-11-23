@@ -4,6 +4,7 @@ import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
 import { supabase } from '../../lib/supabase';
+import { cn } from '../../lib/utils';
 import {
   MessageSquare,
   Send,
@@ -21,6 +22,8 @@ import {
   Plus,
   X,
   Radio,
+  ChevronLeft,
+  ArrowLeft,
 } from 'lucide-react';
 
 const QUICK_TEMPLATES = [
@@ -110,6 +113,7 @@ export function WhatsAppPage() {
   const [activeConvId, setActiveConvId] = useState('conv_1');
   const [searchTerm, setSearchTerm] = useState('');
   const [inputText, setInputText] = useState('');
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'chat' on mobile devices
 
   // Twilio Messaging Service & Content Template Configuration
   const [messagingServiceSid, setMessagingServiceSid] = useState('MGfbcc830c288190a8b384fa9a566756d4');
@@ -147,6 +151,7 @@ export function WhatsAppPage() {
         setConversations([newConv, ...conversations]);
         setActiveConvId(newConv.id);
       }
+      setMobileView('chat');
     }
   }, [location.search]);
 
@@ -273,6 +278,7 @@ export function WhatsAppPage() {
 
     setConversations([newConv, ...conversations]);
     setActiveConvId(newConv.id);
+    setMobileView('chat');
     setShowNewChatModal(false);
 
     // Persist to Supabase
@@ -415,10 +421,10 @@ export function WhatsAppPage() {
         </div>
       </div>
 
-      {/* Two-Pane WhatsApp Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-250px)] min-h-[500px]">
-        {/* Left Pane: Conversations List (4 cols) */}
-        <Card className="lg:col-span-4 flex flex-col p-0 overflow-hidden border-slate-200">
+      {/* Two-Pane WhatsApp Layout (Mobile Single-Pane or Desktop Dual-Pane) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-210px)] min-h-[500px]">
+        {/* Left Pane: Conversations List (Visible on desktop or when mobileView === 'list') */}
+        <Card className={cn("flex flex-col p-0 overflow-hidden border-slate-200 lg:col-span-4", mobileView === 'chat' ? 'hidden lg:flex' : 'flex')}>
           {/* Search box & New Chat button */}
           <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
             <div className="relative flex-1">
@@ -449,7 +455,10 @@ export function WhatsAppPage() {
               return (
                 <div
                   key={conv.id}
-                  onClick={() => setActiveConvId(conv.id)}
+                  onClick={() => {
+                    setActiveConvId(conv.id);
+                    setMobileView('chat');
+                  }}
                   className={`p-3.5 flex items-start gap-3 cursor-pointer transition ${
                     isSelected ? 'bg-emerald-50/70 border-l-4 border-emerald-600' : 'hover:bg-slate-50'
                   }`}
@@ -476,33 +485,43 @@ export function WhatsAppPage() {
           </div>
         </Card>
 
-        {/* Right Pane: Active Chat Thread (8 cols) */}
-        <Card className="lg:col-span-8 flex flex-col p-0 overflow-hidden border-slate-200 bg-slate-50/50">
-          {/* Active Chat Header */}
-          <div className="p-3.5 border-b border-slate-200 bg-white flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center">
+        {/* Right Pane: Active Chat Thread (Visible on desktop or when mobileView === 'chat') */}
+        <Card className={cn("flex flex-col p-0 overflow-hidden border-slate-200 bg-slate-50/50 lg:col-span-8", mobileView === 'list' ? 'hidden lg:flex' : 'flex')}>
+          {/* Active Chat Header with Mobile Back Button */}
+          <div className="p-3 sm:p-3.5 border-b border-slate-200 bg-white flex items-center justify-between">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+              <button
+                type="button"
+                onClick={() => setMobileView('list')}
+                className="lg:hidden p-1.5 -ml-1 rounded-xl text-slate-600 hover:text-navy hover:bg-slate-100 transition flex items-center text-xs font-semibold shrink-0"
+                title="Back to conversation list"
+              >
+                <ChevronLeft className="w-5 h-5 text-emerald-700" />
+              </button>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
                 {activeConv.name.slice(0, 2).toUpperCase()}
               </div>
-              <div>
-                <h3 className="font-extrabold text-navy text-sm flex items-center gap-1.5">
+              <div className="min-w-0">
+                <h3 className="font-extrabold text-navy text-xs sm:text-sm flex items-center gap-1.5 truncate">
                   <span>{activeConv.country}</span>
-                  <span>{activeConv.name}</span>
+                  <span className="truncate">{activeConv.name}</span>
                 </h3>
-                <p className="text-xs text-slate-500">
-                  {activeConv.company} &bull; <span className="font-mono text-slate-600">{activeConv.phone}</span>
+                <p className="text-[10px] sm:text-xs text-slate-500 truncate">
+                  <span className="hidden sm:inline">{activeConv.company} &bull; </span>
+                  <span className="font-mono text-slate-600">{activeConv.phone}</span>
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => navigate(`/app/dialer?phone=${encodeURIComponent(activeConv.phone)}&name=${encodeURIComponent(activeConv.name)}`)}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold transition"
+                className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold transition"
               >
                 <Phone className="w-3.5 h-3.5" />
-                <span>Call on Softphone</span>
+                <span className="hidden sm:inline">Call on Softphone</span>
+                <span className="sm:hidden">Call</span>
               </button>
             </div>
           </div>

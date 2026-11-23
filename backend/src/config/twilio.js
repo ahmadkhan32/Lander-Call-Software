@@ -46,17 +46,25 @@ export function normalizePhoneNumber(rawPhone, defaultCountry = 'PK') {
   if (!rawPhone) return '';
   let cleaned = String(rawPhone).trim().replace(/[\s\-\(\)\.]/g, '');
 
+  // 00 international prefix (e.g. 00923470838718 -> +923470838718)
+  if (cleaned.startsWith('00')) {
+    return '+' + cleaned.slice(2);
+  }
+
   // Already international format
   if (cleaned.startsWith('+')) {
     return cleaned;
   }
 
-  // Pakistan local formatting (e.g. 03470838718 or 3470838718)
+  // Pakistan local mobile (e.g. 03470838718, 03001234567) and 10-digit formats
   if (cleaned.startsWith('03') && cleaned.length === 11) {
     return '+92' + cleaned.slice(1);
   }
   if (cleaned.startsWith('92') && cleaned.length >= 11) {
     return '+' + cleaned;
+  }
+  if (cleaned.startsWith('3') && cleaned.length === 10) {
+    return '+92' + cleaned;
   }
 
   // UK local formatting (e.g. 07123456789 or 02071234567)
@@ -73,6 +81,11 @@ export function normalizePhoneNumber(rawPhone, defaultCountry = 'PK') {
   }
   if (cleaned.startsWith('353') && cleaned.length >= 10) {
     return '+' + cleaned;
+  }
+
+  // General Pakistani local landlines (e.g. 051..., 042..., 021...)
+  if (cleaned.startsWith('0') && (cleaned.length === 10 || cleaned.length === 11)) {
+    return '+92' + cleaned.slice(1);
   }
 
   // Fallback based on default country

@@ -30,20 +30,29 @@ app.use(helmet({
 
 const corsOptions = {
   origin: (origin, callback) => {
+    // Non-browser requests (mobile clients, native apps, curl, Twilio webhooks) have no origin
     if (!origin) return callback(null, true);
 
     const allowed = config.cors.allowedOrigins;
     if (allowed.includes('*')) return callback(null, true);
 
-    const isExplicitlyAllowed = allowed.includes(origin);
-    const isVercelDomain = origin.endsWith('.vercel.app');
+    const normalizedOrigin = origin.replace(/\/+$/, '');
+    const isExplicitlyAllowed = allowed.includes(normalizedOrigin) ||
+      allowed.some((a) => {
+        try {
+          return new URL(a).origin === normalizedOrigin;
+        } catch {
+          return a.replace(/\/+$/, '') === normalizedOrigin;
+        }
+      });
+
+    const isVercelDomain = origin.endsWith('.vercel.app') || origin.includes('lander-call-software');
     const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1');
 
     if (isExplicitlyAllowed || isVercelDomain || isLocalhost) {
       callback(null, true);
     } else {
-      logger.warn(`CORS warning: Origin ${origin} not in whitelist, accepting for development/preview`);
-      // Allow the origin or respond with true to prevent hard crash
+      logger.info(`CORS: Auto-permitting origin ${origin}`);
       callback(null, true);
     }
   },

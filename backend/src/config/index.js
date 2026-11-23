@@ -14,9 +14,17 @@ const config = {
   },
 
   cors: {
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,*')
+    allowedOrigins: (process.env.ALLOWED_ORIGINS || 'https://lander-call-software.vercel.app,http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173,*')
       .split(',')
-      .map((o) => o.trim()),
+      .map((o) => {
+        const trimmed = o.trim();
+        try {
+          if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+            return new URL(trimmed).origin;
+          }
+        } catch {}
+        return trimmed.replace(/\/+$/, '');
+      }),
   },
 
   rateLimit: {
