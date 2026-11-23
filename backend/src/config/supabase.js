@@ -13,9 +13,9 @@ export const isSupabaseConfigured = Boolean(
   !config.supabase.url.includes('your-project')
 );
 
-const supabase = createClient(
-  config.supabase.url || 'https://test.supabase.co',
-  config.supabase.serviceRoleKey || 'test-service-role-key',
+export const supabase = createClient(
+  config.supabase.url || 'https://syfywfxqujvnhtsbsuwd.supabase.co',
+  config.supabase.serviceRoleKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5Znl3ZnhxdWp2bmh0c2JzdXdkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTk3MDMyNiwiZXhwIjoyMTA3NTQ2MzI2fQ.BWGlis7bev_k1NFPHLmrMnQzm6HqqvFYJsmiVCYM8e8',
   {
     auth: {
       autoRefreshToken: false,
@@ -24,5 +24,5 @@ const supabase = createClient(
   }
 );
 
+export const supabaseAdmin = supabase;
 export default supabase;
-

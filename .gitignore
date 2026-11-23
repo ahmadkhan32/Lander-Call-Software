@@ -47,3 +47,5 @@ supabase/.temp/
 # Misc
 .cache/
 *.tsbuildinfo
+.vercel
+.env*

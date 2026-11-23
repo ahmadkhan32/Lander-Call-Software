@@ -7,10 +7,10 @@ const config = {
   isProduction: process.env.NODE_ENV === 'production',
 
   supabase: {
-    url: process.env.SUPABASE_URL,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY,
-    anonKey: process.env.SUPABASE_ANON_KEY,
-    jwtSecret: process.env.JWT_SECRET,
+    url: process.env.SUPABASE_URL || 'https://syfywfxqujvnhtsbsuwd.supabase.co',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5Znl3ZnhxdWp2bmh0c2JzdXdkIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTk3MDMyNiwiZXhwIjoyMTA3NTQ2MzI2fQ.BWGlis7bev_k1NFPHLmrMnQzm6HqqvFYJsmiVCYM8e8',
+    anonKey: process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5Znl3ZnhxdWp2bmh0c2JzdXdkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE5NzAzMjYsImV4cCI6MjEwNzU0NjMyNn0.-5Ek0iI44RX3lwJXNbQCje-yVIkVhJIOaPDgmZ0Pb3A',
+    jwtSecret: process.env.JWT_SECRET || 'lander-jwt-secret-secure-2026',
   },
 
   cors: {

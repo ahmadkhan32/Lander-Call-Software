@@ -1,6 +1,7 @@
 -- ============================================================
 -- Migration: 012_whatsapp_and_call_intents.sql
 -- Description: WhatsApp messaging, call intents, and communications audit
+-- Fully compatible with Supabase PostgreSQL & Multi-tenant RBAC
 -- ============================================================
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
@@ -41,6 +42,10 @@ CREATE TRIGGER trg_messages_updated_at BEFORE UPDATE ON public.messages
 CREATE OR REPLACE VIEW public.crm_messages AS
   SELECT * FROM public.messages;
 
+-- Alias view for crm_calls compatibility
+CREATE OR REPLACE VIEW public.crm_calls AS
+  SELECT * FROM public.calls;
+
 -- ============================================================
 -- CRM CALL INTENTS (Secures WebRTC browser token bridging)
 -- ============================================================
@@ -58,6 +63,10 @@ CREATE TABLE IF NOT EXISTS public.crm_call_intents (
 CREATE INDEX IF NOT EXISTS idx_call_intents_org     ON public.crm_call_intents (organization_id);
 CREATE INDEX IF NOT EXISTS idx_call_intents_agent   ON public.crm_call_intents (agent_id);
 CREATE INDEX IF NOT EXISTS idx_call_intents_pending ON public.crm_call_intents (id) WHERE consumed_at IS NULL;
+
+-- Alias view for crm_communication_audit compatibility
+CREATE OR REPLACE VIEW public.crm_communication_audit AS
+  SELECT * FROM public.audit_logs;
 
 -- ============================================================
 -- ROW LEVEL SECURITY

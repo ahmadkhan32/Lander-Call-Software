@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../components/ui/Toast';
+import { supabase } from '../../lib/supabase';
 import {
   MessageSquare,
   Send,
@@ -159,6 +160,18 @@ export function WhatsAppPage() {
 
     const msgBody = inputText;
     setInputText('');
+
+    // Persist directly to Supabase messages table
+    try {
+      await supabase.from('messages').insert({
+        to_number: activeConv.phone,
+        from_number: '+923470838718',
+        body: msgBody,
+        direction: 'outbound',
+        channel: 'whatsapp',
+        status: 'delivered',
+      });
+    } catch {}
 
     // Send via backend WhatsApp API
     try {
