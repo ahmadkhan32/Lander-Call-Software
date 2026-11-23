@@ -19,6 +19,8 @@ import {
   ShieldCheck,
   RotateCcw,
   Plus,
+  X,
+  Radio,
 } from 'lucide-react';
 
 const QUICK_TEMPLATES = [
@@ -101,6 +103,12 @@ export function WhatsAppPage() {
   const [activeConvId, setActiveConvId] = useState('conv_1');
   const [searchTerm, setSearchTerm] = useState('');
   const [inputText, setInputText] = useState('');
+
+  // New Chat Modal state
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newChatPhone, setNewChatPhone] = useState('+92 347 0838718');
+  const [newChatName, setNewChatName] = useState('');
+  const [newChatMessage, setNewChatMessage] = useState('Hello! Connecting from LANDER CRM.');
 
   // Handle URL query parameters to select or create conversation
   useEffect(() => {
@@ -196,11 +204,69 @@ export function WhatsAppPage() {
     });
   };
 
+  const handleStartNewChat = (e) => {
+    e.preventDefault();
+    if (!newChatPhone.trim()) {
+      addToast({ title: 'Phone Required', description: 'Please enter a valid phone number', variant: 'error' });
+      return;
+    }
+
+    const cleanPhone = newChatPhone.trim();
+    const cleanName = newChatName.trim() || 'New Contact';
+    const country = cleanPhone.startsWith('+44') ? '🇬🇧' : cleanPhone.startsWith('+353') ? '🇮🇪' : '🇵🇰';
+
+    const newConv = {
+      id: `conv_${Date.now()}`,
+      name: cleanName,
+      company: 'Direct WhatsApp Contact',
+      phone: cleanPhone,
+      country,
+      unread: 0,
+      lastTime: 'Just now',
+      messages: [
+        {
+          id: `m_${Date.now()}`,
+          sender: 'agent',
+          text: newChatMessage || 'Hello! Connecting via LANDER WhatsApp.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          status: 'delivered',
+        },
+      ],
+    };
+
+    setConversations([newConv, ...conversations]);
+    setActiveConvId(newConv.id);
+    setShowNewChatModal(false);
+
+    // Persist to Supabase
+    try {
+      supabase.from('messages').insert({
+        to_number: cleanPhone,
+        from_number: '+923470838718',
+        body: newChatMessage,
+        direction: 'outbound',
+        channel: 'whatsapp',
+        status: 'delivered',
+      }).then(() => {});
+    } catch {}
+
+    addToast({
+      title: 'WhatsApp Chat Started',
+      description: `New thread opened with ${cleanName} (${cleanPhone}).`,
+      variant: 'success',
+    });
+
+    setNewChatName('');
+    setNewChatPhone('+92 347 0838718');
+    setNewChatMessage('Hello! Connecting from LANDER CRM.');
+  };
+
   const handleSimulateReply = () => {
     const replies = [
       'Sounds great! Can you please send the link to finalize our agreement?',
       'Yes, our team is available for the walkthrough at 3:00 PM.',
       'Thank you for the quick follow-up. We appreciate the support!',
+      'Confirmed! We are ready to begin with 20 seats on the Pakistan route.',
     ];
     const randomReply = replies[Math.floor(Math.random() * replies.length)];
 
@@ -282,18 +348,26 @@ export function WhatsAppPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 h-[calc(100vh-250px)] min-h-[500px]">
         {/* Left Pane: Conversations List (4 cols) */}
         <Card className="lg:col-span-4 flex flex-col p-0 overflow-hidden border-slate-200">
-          {/* Search box */}
-          <div className="p-3 border-b border-slate-100 bg-slate-50">
-            <div className="relative">
+          {/* Search box & New Chat button */}
+          <div className="p-3 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+            <div className="relative flex-1">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="text"
-                placeholder="Search conversations..."
+                placeholder="Search chats..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 py-1.5 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setShowNewChatModal(true)}
+              className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition"
+              title="Start New WhatsApp Conversation"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Conversations scroll area */}
@@ -350,14 +424,16 @@ export function WhatsAppPage() {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => navigate(`/app/dialer?phone=${encodeURIComponent(activeConv.phone)}&name=${encodeURIComponent(activeConv.name)}`)}
-              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold transition"
-            >
-              <Phone className="w-3.5 h-3.5" />
-              <span>Dial Call</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`/app/dialer?phone=${encodeURIComponent(activeConv.phone)}&name=${encodeURIComponent(activeConv.name)}`)}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold transition"
+              >
+                <Phone className="w-3.5 h-3.5" />
+                <span>Call on Softphone</span>
+              </button>
+            </div>
           </div>
 
           {/* Messages Thread */}
@@ -433,6 +509,98 @@ export function WhatsAppPage() {
           </div>
         </Card>
       </div>
+
+      {/* Start New Chat Modal */}
+      {showNewChatModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md p-6 bg-white shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-navy flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-600" />
+                <span>Start New WhatsApp Conversation</span>
+              </h3>
+              <button onClick={() => setShowNewChatModal(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleStartNewChat} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Recipient Contact Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Tariq Mehmood"
+                  value={newChatName}
+                  onChange={(e) => setNewChatName(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-slate-700">
+                    Recipient Phone Number (E.164)
+                  </label>
+                  <div className="flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setNewChatPhone('+92 ')}
+                      className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
+                    >
+                      🇵🇰 +92
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewChatPhone('+44 ')}
+                      className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
+                    >
+                      🇬🇧 +44
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setNewChatPhone('+353 ')}
+                      className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
+                    >
+                      🇮🇪 +353
+                    </button>
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  required
+                  placeholder="+92 347 0838718"
+                  value={newChatPhone}
+                  onChange={(e) => setNewChatPhone(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 p-2.5 font-mono focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-slate-700 mb-1">
+                  Initial Message
+                </label>
+                <textarea
+                  rows={3}
+                  value={newChatMessage}
+                  onChange={(e) => setNewChatMessage(e.target.value)}
+                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button variant="outline" size="sm" onClick={() => setShowNewChatModal(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" variant="primary" size="sm" className="bg-emerald-600 hover:bg-emerald-700">
+                  Open Chat &amp; Send
+                </Button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

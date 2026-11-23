@@ -197,43 +197,167 @@ export const router = createBrowserRouter([
   },
   {
     path: '/super-admin/organizations',
-    element: (
-      <ProtectedRoute allowedRoles={['super_admin']} requiredPermission="organizations.manage">
-        <AppShell>
-          <OrganizationsPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/app/organizations" replace />,
   },
   {
     path: '/super-admin/users',
-    element: (
-      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.read">
-        <AppShell>
-          <UserManagementPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/app/users" replace />,
   },
   {
     path: '/super-admin/invitations',
-    element: (
-      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']} requiredPermission="users.create">
-        <AppShell>
-          <InvitationsPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/app/invitations" replace />,
   },
   {
     path: '/super-admin/roles',
-    element: (
-      <ProtectedRoute allowedRoles={['super_admin', 'business_admin']}>
-        <AppShell>
-          <RolesPermissionsPage />
-        </AppShell>
-      </ProtectedRoute>
-    ),
+    element: <Navigate to="/app/roles-permissions" replace />,
+  },
+  {
+    path: '/super-admin/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/super-admin/customers',
+    element: <Navigate to="/app/customers" replace />,
+  },
+  {
+    path: '/super-admin/dialer',
+    element: <Navigate to="/app/dialer" replace />,
+  },
+  {
+    path: '/super-admin/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/super-admin/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/super-admin/settings',
+    element: <Navigate to="/app/settings" replace />,
+  },
+  {
+    path: '/admin/organizations',
+    element: <Navigate to="/app/organizations" replace />,
+  },
+  {
+    path: '/admin/users',
+    element: <Navigate to="/app/users" replace />,
+  },
+  {
+    path: '/admin/invitations',
+    element: <Navigate to="/app/invitations" replace />,
+  },
+  {
+    path: '/admin/roles',
+    element: <Navigate to="/app/roles-permissions" replace />,
+  },
+  {
+    path: '/admin/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/admin/customers',
+    element: <Navigate to="/app/customers" replace />,
+  },
+  {
+    path: '/admin/dialer',
+    element: <Navigate to="/app/dialer" replace />,
+  },
+  {
+    path: '/admin/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/admin/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/admin/settings',
+    element: <Navigate to="/app/settings" replace />,
+  },
+  {
+    path: '/agent/dialer',
+    element: <Navigate to="/app/dialer" replace />,
+  },
+  {
+    path: '/agent/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/agent/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/agent/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/manager/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/manager/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/manager/dialer',
+    element: <Navigate to="/app/dialer" replace />,
+  },
+  {
+    path: '/manager/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/manager/reports',
+    element: <Navigate to="/app/reports" replace />,
+  },
+  {
+    path: '/supervisor/dialer',
+    element: <Navigate to="/app/dialer" replace />,
+  },
+  {
+    path: '/supervisor/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/supervisor/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/supervisor/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/crm/leads',
+    element: <Navigate to="/app/leads" replace />,
+  },
+  {
+    path: '/crm/customers',
+    element: <Navigate to="/app/customers" replace />,
+  },
+  {
+    path: '/crm/whatsapp',
+    element: <Navigate to="/app/whatsapp" replace />,
+  },
+  {
+    path: '/qa/calls',
+    element: <Navigate to="/app/calls" replace />,
+  },
+  {
+    path: '/qa/qa',
+    element: <Navigate to="/app/qa" replace />,
+  },
+  {
+    path: '/reports/reports',
+    element: <Navigate to="/app/reports" replace />,
+  },
+  {
+    path: '/integrations/settings',
+    element: <Navigate to="/app/settings" replace />,
+  },
+  {
+    path: '/integrations/integrations',
+    element: <Navigate to="/app/integrations" replace />,
   },
   {
     path: '/integrations/dashboard',

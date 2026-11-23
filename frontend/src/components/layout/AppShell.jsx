@@ -9,16 +9,16 @@ export function AppShell({ children }) {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-page text-navy flex flex-col font-sans">
-      {/* Topbar */}
-      <header className="sticky top-0 z-30 w-full shrink-0">
+    <div className="h-screen w-full bg-page text-navy flex flex-col font-sans overflow-hidden">
+      {/* Topbar (Fixed height at top) */}
+      <header className="h-16 shrink-0 z-30 w-full border-b border-slate-800 bg-[#0F172A]">
         <Topbar onMenuClick={() => setMobileDrawerOpen(true)} />
       </header>
 
-      {/* Main Body */}
+      {/* Main Body (Fills remaining screen height exactly) */}
       <div className="flex flex-1 min-h-0 overflow-hidden">
-        {/* Desktop Sidebar (hidden on tablet/mobile) */}
-        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-navy text-white border-r border-slate-800 h-[calc(100vh-64px)] sticky top-16 overflow-hidden">
+        {/* Desktop Sidebar (Fixed left rail, fits 100% height without overflowing screen) */}
+        <aside className="hidden lg:flex flex-col w-64 shrink-0 bg-navy text-white border-r border-slate-800 h-full overflow-hidden select-none">
           <Sidebar />
         </aside>
 
@@ -35,8 +35,8 @@ export function AppShell({ children }) {
           </div>
         </Drawer>
 
-        {/* Main Content Area */}
-        <main className="flex-1 min-w-0 h-[calc(100vh-64px)] overflow-y-auto p-4 sm:p-6 lg:p-8 pb-20 lg:pb-8">
+        {/* Main Content Area (Independent scrollable viewport) */}
+        <main className="flex-1 min-w-0 h-full overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto w-full max-w-[1600px]">
             {children || <Outlet />}
           </div>
