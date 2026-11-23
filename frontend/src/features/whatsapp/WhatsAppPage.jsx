@@ -25,6 +25,13 @@ import {
 
 const QUICK_TEMPLATES = [
   {
+    id: 't_content_sid',
+    label: '⭐ Pre-Approved Template (HXb5b62...)',
+    text: 'Demonstration confirmation for 22 July 2026 at 3:15pm',
+    contentSid: 'HXb5b62575e6e4ff6129ad7c8efe1f983e',
+    contentVariables: { 1: '22 July 2026', 2: '3:15pm' },
+  },
+  {
     id: 't_intro',
     label: 'Intro & Welcome',
     text: 'Hello! Thank you for inquiring about LANDER CRM. We offer high-velocity telephony dialing with Pakistan, UK, and global routing. Would you like a live demo?',
@@ -104,11 +111,19 @@ export function WhatsAppPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [inputText, setInputText] = useState('');
 
+  // Twilio Messaging Service & Content Template Configuration
+  const [messagingServiceSid, setMessagingServiceSid] = useState('MGfbcc830c288190a8b384fa9a566756d4');
+  const [contentSid, setContentSid] = useState('HXb5b62575e6e4ff6129ad7c8efe1f983e');
+  const [templateVarDate, setTemplateVarDate] = useState('22 July 2026');
+  const [templateVarTime, setTemplateVarTime] = useState('3:15pm');
+  const [isTemplateActive, setIsTemplateActive] = useState(false);
+
   // New Chat Modal state
   const [showNewChatModal, setShowNewChatModal] = useState(false);
   const [newChatPhone, setNewChatPhone] = useState('+92 347 0838718');
   const [newChatName, setNewChatName] = useState('');
   const [newChatMessage, setNewChatMessage] = useState('Hello! Connecting from LANDER CRM.');
+  const [newChatUseTemplate, setNewChatUseTemplate] = useState(false);
 
   // Handle URL query parameters to select or create conversation
   useEffect(() => {
@@ -143,14 +158,25 @@ export function WhatsAppPage() {
   const activeConv = conversations.find((c) => c.id === activeConvId) || conversations[0];
 
   const handleSendMessage = async () => {
-    if (!inputText.trim()) return;
+    let finalBody = inputText.trim();
+    let payloadContentSid = null;
+    let payloadVariables = null;
+
+    if (isTemplateActive) {
+      finalBody = `Demonstration confirmation for ${templateVarDate} at ${templateVarTime}`;
+      payloadContentSid = contentSid;
+      payloadVariables = { 1: templateVarDate, 2: templateVarTime };
+    }
+
+    if (!finalBody) return;
 
     const newMsg = {
       id: `m_${Date.now()}`,
       sender: 'agent',
-      text: inputText,
+      text: finalBody,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       status: 'delivered',
+      isTemplate: Boolean(payloadContentSid),
     };
 
     setConversations((prev) =>
@@ -166,22 +192,22 @@ export function WhatsAppPage() {
       })
     );
 
-    const msgBody = inputText;
     setInputText('');
+    if (isTemplateActive) setIsTemplateActive(false);
 
     // Persist directly to Supabase messages table
     try {
       await supabase.from('messages').insert({
         to_number: activeConv.phone,
         from_number: '+923470838718',
-        body: msgBody,
+        body: finalBody,
         direction: 'outbound',
         channel: 'whatsapp',
         status: 'delivered',
       });
     } catch {}
 
-    // Send via backend WhatsApp API
+    // Send via backend WhatsApp API with Messaging Service SID & Content Template SID
     try {
       const apiBase = import.meta.env.VITE_API_URL || '';
       const token = localStorage.getItem('lander_auth_token') || '';
@@ -191,15 +217,21 @@ export function WhatsAppPage() {
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
             to: activeConv.phone,
-            body: msgBody,
+            body: finalBody,
+            content_sid: payloadContentSid,
+            content_variables: payloadVariables,
+            messaging_service_sid: messagingServiceSid,
+            channel: 'whatsapp',
           }),
         }).catch(() => {});
       }
     } catch {}
 
     addToast({
-      title: 'WhatsApp Message Sent',
-      description: `Sent to ${activeConv.name} (${activeConv.phone}) via Twilio sender whatsapp:+923470838718.`,
+      title: payloadContentSid ? 'WhatsApp Content Template Dispatched' : 'WhatsApp Message Dispatched',
+      description: payloadContentSid
+        ? `Sent template ${payloadContentSid} via Messaging Service ${messagingServiceSid} to ${activeConv.name} (${activeConv.phone}).`
+        : `Sent to ${activeConv.name} (${activeConv.phone}) via Messaging Service ${messagingServiceSid}.`,
       variant: 'success',
     });
   };
@@ -215,6 +247,10 @@ export function WhatsAppPage() {
     const cleanName = newChatName.trim() || 'New Contact';
     const country = cleanPhone.startsWith('+44') ? '🇬🇧' : cleanPhone.startsWith('+353') ? '🇮🇪' : '🇵🇰';
 
+    const initialText = newChatUseTemplate
+      ? `Demonstration confirmation for ${templateVarDate} at ${templateVarTime}`
+      : (newChatMessage || 'Hello! Connecting via LANDER WhatsApp.');
+
     const newConv = {
       id: `conv_${Date.now()}`,
       name: cleanName,
@@ -227,9 +263,10 @@ export function WhatsAppPage() {
         {
           id: `m_${Date.now()}`,
           sender: 'agent',
-          text: newChatMessage || 'Hello! Connecting via LANDER WhatsApp.',
+          text: initialText,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'delivered',
+          isTemplate: newChatUseTemplate,
         },
       ],
     };
@@ -243,22 +280,43 @@ export function WhatsAppPage() {
       supabase.from('messages').insert({
         to_number: cleanPhone,
         from_number: '+923470838718',
-        body: newChatMessage,
+        body: initialText,
         direction: 'outbound',
         channel: 'whatsapp',
         status: 'delivered',
       }).then(() => {});
     } catch {}
 
+    // Send via backend
+    try {
+      const apiBase = import.meta.env.VITE_API_URL || '';
+      const token = localStorage.getItem('lander_auth_token') || '';
+      if (apiBase) {
+        fetch(`${apiBase}/api/whatsapp/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            to: cleanPhone,
+            body: initialText,
+            content_sid: newChatUseTemplate ? contentSid : undefined,
+            content_variables: newChatUseTemplate ? { 1: templateVarDate, 2: templateVarTime } : undefined,
+            messaging_service_sid: messagingServiceSid,
+            channel: 'whatsapp',
+          }),
+        }).catch(() => {});
+      }
+    } catch {}
+
     addToast({
       title: 'WhatsApp Chat Started',
-      description: `New thread opened with ${cleanName} (${cleanPhone}).`,
+      description: `New thread opened with ${cleanName} (${cleanPhone}) via Messaging Service ${messagingServiceSid}.`,
       variant: 'success',
     });
 
     setNewChatName('');
     setNewChatPhone('+92 347 0838718');
     setNewChatMessage('Hello! Connecting from LANDER CRM.');
+    setNewChatUseTemplate(false);
   };
 
   const handleSimulateReply = () => {
@@ -317,9 +375,22 @@ export function WhatsAppPage() {
           <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
             WhatsApp CRM Inbox
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
-            Sender: <strong className="text-emerald-700 font-mono">whatsapp:+923470838718</strong> &bull; Two-way lead messaging with quick reply templates.
+          <p className="mt-1 text-xs text-slate-500 font-medium">
+            Two-way lead messaging with verified Ufone Pakistan sender and Twilio Messaging Service integration.
           </p>
+          <div className="flex flex-wrap items-center gap-2 mt-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-[11px] font-medium text-emerald-800">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              Sender: <strong>+923470838718</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-medium text-blue-800 font-mono">
+              <Radio className="w-3 h-3 text-blue-600" />
+              Service SID: <strong>MGfbcc830c288190a8b384fa9a566756d4</strong>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-purple-50 border border-purple-200 text-[11px] font-medium text-purple-800 font-mono">
+              Content SID: <strong>HXb5b62575e6e4ff6129ad7c8efe1f983e</strong>
+            </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -477,34 +548,93 @@ export function WhatsAppPage() {
               <button
                 key={tmpl.id}
                 type="button"
-                onClick={() => setInputText(tmpl.text)}
-                className="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-[11px] font-medium text-slate-700 shrink-0 transition"
+                onClick={() => {
+                  if (tmpl.contentSid) {
+                    setIsTemplateActive(!isTemplateActive);
+                    setInputText('');
+                  } else {
+                    setIsTemplateActive(false);
+                    setInputText(tmpl.text);
+                  }
+                }}
+                className={`px-2.5 py-1 rounded-lg text-[11px] font-medium shrink-0 transition ${
+                  tmpl.contentSid && isTemplateActive
+                    ? 'bg-purple-600 text-white shadow-sm'
+                    : 'bg-slate-100 hover:bg-emerald-50 hover:text-emerald-700 text-slate-700'
+                }`}
               >
                 {tmpl.label}
               </button>
             ))}
           </div>
 
+          {/* Twilio Approved Template Variables Editor */}
+          {isTemplateActive && (
+            <div className="p-3 border-t border-purple-200 bg-purple-50/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3">
+                <span className="font-bold text-purple-900 flex items-center gap-1">
+                  <span>⭐ Content Template</span>
+                  <code className="text-[11px] bg-purple-200/80 px-1.5 py-0.5 rounded text-purple-950 font-mono">HXb5b62575e6e4ff6129ad7c8efe1f983e</code>:
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[11px] font-semibold text-purple-800">Date {'{{1}}'}:</span>
+                  <input
+                    type="text"
+                    value={templateVarDate}
+                    onChange={(e) => setTemplateVarDate(e.target.value)}
+                    placeholder="22 July 2026"
+                    className="px-2.5 py-1 rounded-lg border border-purple-300 bg-white text-xs w-28 focus:ring-1 focus:ring-purple-600"
+                  />
+                  <span className="text-[11px] font-semibold text-purple-800 ml-1">Time {'{{2}}'}:</span>
+                  <input
+                    type="text"
+                    value={templateVarTime}
+                    onChange={(e) => setTemplateVarTime(e.target.value)}
+                    placeholder="3:15pm"
+                    className="px-2.5 py-1 rounded-lg border border-purple-300 bg-white text-xs w-20 focus:ring-1 focus:ring-purple-600"
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsTemplateActive(false)}
+                className="text-xs text-purple-700 hover:text-purple-900 font-semibold"
+              >
+                &times; Cancel Template
+              </button>
+            </div>
+          )}
+
           {/* Composer */}
           <div className="p-3 border-t border-slate-200 bg-white flex items-center gap-2">
             <input
               type="text"
               value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
+              onChange={(e) => {
+                setInputText(e.target.value);
+                if (isTemplateActive) setIsTemplateActive(false);
+              }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') handleSendMessage();
               }}
-              placeholder="Type a WhatsApp message or pick a template above..."
-              className="flex-1 rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white transition"
+              placeholder={isTemplateActive ? "Click 'Send' to dispatch pre-approved Content Template (HXb5b625...)" : "Type a WhatsApp message or pick a template above..."}
+              disabled={isTemplateActive}
+              className={`flex-1 rounded-xl border border-slate-300 px-4 py-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition ${
+                isTemplateActive ? 'bg-purple-50/50 font-medium text-purple-900' : 'bg-slate-50 focus:bg-white'
+              }`}
             />
             <Button
               variant="primary"
               onClick={handleSendMessage}
-              disabled={!inputText.trim()}
-              className="bg-emerald-600 hover:bg-emerald-700 text-xs font-semibold px-4 py-2.5 shadow-sm"
+              disabled={!isTemplateActive && !inputText.trim()}
+              className={`text-xs font-semibold px-4 py-2.5 shadow-sm ${
+                isTemplateActive
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
             >
               <Send className="w-4 h-4 mr-1.5" />
-              <span>Send</span>
+              <span>{isTemplateActive ? 'Send Template' : 'Send'}</span>
             </Button>
           </div>
         </Card>
@@ -515,10 +645,15 @@ export function WhatsAppPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <Card className="w-full max-w-md p-6 bg-white shadow-xl space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h3 className="text-base font-bold text-navy flex items-center gap-2">
-                <MessageSquare className="w-5 h-5 text-emerald-600" />
-                <span>Start New WhatsApp Conversation</span>
-              </h3>
+              <div>
+                <h3 className="text-base font-bold text-navy flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 text-emerald-600" />
+                  <span>Start New WhatsApp Conversation</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 font-mono mt-0.5">
+                  Service SID: MGfbcc830c288190a8b384fa9a566756d4
+                </p>
+              </div>
               <button onClick={() => setShowNewChatModal(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
@@ -546,24 +681,24 @@ export function WhatsAppPage() {
                   <div className="flex gap-1">
                     <button
                       type="button"
-                      onClick={() => setNewChatPhone('+92 ')}
+                      onClick={() => setNewChatPhone('+92 347 0838718')}
                       className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
                     >
-                      🇵🇰 +92
+                      🇵🇰 +92 (Verified)
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewChatPhone('+44 ')}
+                      onClick={() => setNewChatPhone('+44 7911 123456')}
                       className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
                     >
-                      🇬🇧 +44
+                      🇬🇧 +44 UK
                     </button>
                     <button
                       type="button"
-                      onClick={() => setNewChatPhone('+353 ')}
+                      onClick={() => setNewChatPhone('+353 87 1234567')}
                       className="text-[10px] bg-slate-100 hover:bg-emerald-50 px-1.5 py-0.5 rounded font-semibold text-slate-600"
                     >
-                      🇮🇪 +353
+                      🇮🇪 +353 IE
                     </button>
                   </div>
                 </div>
@@ -577,16 +712,48 @@ export function WhatsAppPage() {
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-700 mb-1">
-                  Initial Message
+              {/* Template vs Freeform Choice */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <label className="flex items-center gap-2 cursor-pointer font-semibold text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={newChatUseTemplate}
+                    onChange={(e) => setNewChatUseTemplate(e.target.checked)}
+                    className="rounded text-purple-600 focus:ring-purple-500"
+                  />
+                  <span>Send Pre-Approved Twilio Template (HXb5b62575e6e4ff6129ad7c8efe1f983e)</span>
                 </label>
-                <textarea
-                  rows={3}
-                  value={newChatMessage}
-                  onChange={(e) => setNewChatMessage(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500"
-                />
+
+                {newChatUseTemplate ? (
+                  <div className="flex items-center gap-2 pt-1 text-[11px]">
+                    <span>Date:</span>
+                    <input
+                      type="text"
+                      value={templateVarDate}
+                      onChange={(e) => setTemplateVarDate(e.target.value)}
+                      className="px-2 py-1 rounded border border-slate-300 bg-white w-24"
+                    />
+                    <span>Time:</span>
+                    <input
+                      type="text"
+                      value={templateVarTime}
+                      onChange={(e) => setTemplateVarTime(e.target.value)}
+                      className="px-2 py-1 rounded border border-slate-300 bg-white w-20"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block font-semibold text-slate-700 mb-1">
+                      Initial Message
+                    </label>
+                    <textarea
+                      rows={2}
+                      value={newChatMessage}
+                      onChange={(e) => setNewChatMessage(e.target.value)}
+                      className="w-full rounded-xl border border-slate-300 p-2.5 focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

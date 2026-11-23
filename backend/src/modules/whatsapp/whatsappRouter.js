@@ -1,8 +1,9 @@
 import express from 'express';
 import { z } from 'zod';
+import twilio from 'twilio';
 import { authenticate, requirePermission } from '../../middleware/auth.js';
 import { parsePagination, successResponse, errorResponse, validateBody, handleDbError } from '../../utils/helpers.js';
-import { sendWhatsAppMessage, normalizePhoneNumber, twilioConfig } from '../../config/twilio.js';
+import { sendWhatsAppMessage, sendSMSMessage, normalizePhoneNumber, twilioConfig } from '../../config/twilio.js';
 import { auditRepository } from '../../repositories/auditRepository.js';
 import supabase from '../../config/supabase.js';
 import logger from '../../utils/logger.js';
@@ -64,8 +65,12 @@ let memoryMessages = [
 const sendSchema = z.object({
   lead_id: z.string().optional().nullable(),
   to: z.string().min(5),
-  body: z.string().min(1).max(4096),
+  body: z.string().optional().nullable(),
   media_url: z.string().url().optional().nullable(),
+  content_sid: z.string().optional().nullable(),
+  content_variables: z.any().optional().nullable(),
+  messaging_service_sid: z.string().optional().nullable(),
+  channel: z.enum(['whatsapp', 'sms']).optional().default('whatsapp'),
 });
 
 // GET /api/whatsapp/messages
@@ -88,6 +93,8 @@ router.get('/messages', authenticate, requirePermission('leads.read'), async (re
       return successResponse(res, {
         messages: filtered,
         pagination: { page, limit, total: filtered.length },
+        messagingServiceSid: twilioConfig.messagingServiceSid,
+        defaultContentSid: twilioConfig.defaultContentSid,
       });
     }
   } catch (err) {
@@ -103,22 +110,29 @@ router.get('/messages', authenticate, requirePermission('leads.read'), async (re
     messages: filtered,
     pagination: { page, limit, total: filtered.length },
     activeSender: twilioConfig.callerId,
+    messagingServiceSid: twilioConfig.messagingServiceSid,
+    defaultContentSid: twilioConfig.defaultContentSid,
   });
 });
 
-// POST /api/whatsapp/send
+// POST /api/whatsapp/send (Sends WhatsApp or SMS via Messaging Service SID or Content Template)
 router.post('/send', authenticate, requirePermission('leads.update'), async (req, res) => {
   const body = validateBody(sendSchema, req.body, res);
   if (!body) return;
 
   const normalizedTo = normalizePhoneNumber(body.to);
   const senderPhone = twilioConfig.callerId || '+923470838718';
+  const effectiveMessagingServiceSid = body.messaging_service_sid || twilioConfig.messagingServiceSid;
 
   const twilioResult = await sendWhatsAppMessage({
     to: normalizedTo,
-    from: `whatsapp:${senderPhone}`,
-    body: body.body,
+    from: body.channel === 'whatsapp' ? `whatsapp:${senderPhone}` : senderPhone,
+    body: body.body || (body.content_sid ? 'Template message' : 'Hello from LANDER CRM'),
     mediaUrl: body.media_url,
+    contentSid: body.content_sid,
+    contentVariables: body.content_variables,
+    messagingServiceSid: effectiveMessagingServiceSid,
+    channel: body.channel || 'whatsapp',
   });
 
   const newMsg = {
@@ -128,9 +142,10 @@ router.post('/send', authenticate, requirePermission('leads.update'), async (req
     sender_phone: senderPhone,
     recipient_phone: normalizedTo,
     direction: 'outbound',
-    body: body.body,
+    body: body.body || (body.content_sid ? `[Template: ${body.content_sid}]` : 'Hello from LANDER CRM'),
     status: twilioResult.status || 'sent',
-    channel: 'whatsapp',
+    channel: body.channel || 'whatsapp',
+    messaging_service_sid: effectiveMessagingServiceSid,
     created_at: new Date().toISOString(),
   };
 
@@ -138,15 +153,14 @@ router.post('/send', authenticate, requirePermission('leads.update'), async (req
 
   try {
     await supabase.from('messages').insert({
-      id: newMsg.id.startsWith('wa_') && newMsg.id.length === 36 ? newMsg.id : undefined,
       organization_id: req.user.organizationId,
       lead_id: body.lead_id || null,
       sender_phone: senderPhone,
       recipient_phone: normalizedTo,
       direction: 'outbound',
-      body: body.body,
+      body: newMsg.body,
       status: twilioResult.status || 'sent',
-      channel: 'whatsapp',
+      channel: body.channel || 'whatsapp',
     });
   } catch {
     // Ignore db write failure, memory store is active
@@ -158,7 +172,11 @@ router.post('/send', authenticate, requirePermission('leads.update'), async (req
     action: 'whatsapp.message_sent',
     resourceType: 'message',
     resourceId: newMsg.id,
-    newValue: { to: normalizedTo, body: body.body.slice(0, 100) },
+    newValue: {
+      to: normalizedTo,
+      body: newMsg.body.slice(0, 100),
+      messagingServiceSid: effectiveMessagingServiceSid,
+    },
   });
 
   return successResponse(res, {
@@ -166,6 +184,58 @@ router.post('/send', authenticate, requirePermission('leads.update'), async (req
     twilio: twilioResult,
   }, 201);
 });
+
+// POST /api/whatsapp/webhook & POST /whatsapp
+// Handles incoming messages directly from Twilio Webhooks
+const handleTwilioWebhook = async (req, res) => {
+  try {
+    const from = req.body.From || req.body.from;
+    const to = req.body.To || req.body.to;
+    const bodyText = req.body.Body || req.body.body || '';
+    const messageSid = req.body.MessageSid || req.body.SmsMessageSid || `wa_inbound_${Date.now()}`;
+
+    const cleanSender = from ? from.replace('whatsapp:', '').trim() : '+923001234567';
+    const cleanRecipient = to ? to.replace('whatsapp:', '').trim() : twilioConfig.callerId;
+
+    const inboundMsg = {
+      id: messageSid,
+      organization_id: '00000000-0000-0000-0000-000000000001',
+      lead_id: null,
+      sender_phone: cleanSender,
+      recipient_phone: cleanRecipient,
+      direction: 'inbound',
+      body: bodyText || 'Incoming WhatsApp Message',
+      status: 'received',
+      channel: 'whatsapp',
+      created_at: new Date().toISOString(),
+    };
+
+    memoryMessages.unshift(inboundMsg);
+
+    try {
+      await supabase.from('messages').insert({
+        sender_phone: cleanSender,
+        recipient_phone: cleanRecipient,
+        direction: 'inbound',
+        body: inboundMsg.body,
+        status: 'received',
+        channel: 'whatsapp',
+      });
+    } catch {}
+
+    const twiml = new twilio.twiml.MessagingResponse();
+    twiml.message('Message received! Hello again from the Twilio Sandbox for WhatsApp.');
+    res.type('text/xml').send(twiml.toString());
+  } catch (err) {
+    logger.warn('[WhatsApp] Webhook processing exception:', err.message);
+    const twiml = new twilio.twiml.MessagingResponse();
+    twiml.message('Message received! Hello from LANDER CRM.');
+    res.type('text/xml').send(twiml.toString());
+  }
+};
+
+router.post('/webhook', handleTwilioWebhook);
+router.post('/', handleTwilioWebhook);
 
 // POST /api/whatsapp/simulate-inbound
 router.post('/simulate-inbound', authenticate, requirePermission('leads.update'), async (req, res) => {

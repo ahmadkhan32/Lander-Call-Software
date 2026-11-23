@@ -88,6 +88,7 @@ app.use('/api/roles',         rolesRouter);
 app.use('/api/leads',         leadsRouter);
 app.use('/api/calls',         callsRouter);
 app.use('/api/whatsapp',      whatsappRouter);
+app.use('/whatsapp',          whatsappRouter);
 app.use('/api/campaigns',     campaignsRouter);
 app.use('/api/follow-ups',    followUpsRouter);
 app.use('/api/reports',       reportsRouter);

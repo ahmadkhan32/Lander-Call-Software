@@ -16,6 +16,8 @@ export const twilioConfig = {
   fromNumber: process.env.TWILIO_FROM_NUMBER || '+923470838718',
   twimlAppSid: process.env.TWILIO_TWIML_APP_SID || 'AP00000000000000000000000000000000',
   whatsappFrom: process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+923470838718',
+  messagingServiceSid: process.env.TWILIO_MESSAGING_SERVICE_SID || 'MGfbcc830c288190a8b384fa9a566756d4',
+  defaultContentSid: process.env.TWILIO_CONTENT_SID || 'HXb5b62575e6e4ff6129ad7c8efe1f983e',
 };
 
 // Initialize Twilio client using API Key + Secret (or Account SID + Auth Token)
@@ -116,41 +118,84 @@ export function createVoiceToken(identity = 'agent') {
 }
 
 /**
- * Sends a WhatsApp message via Twilio REST API.
+ * Sends a WhatsApp or SMS message via Twilio REST API.
+ * Supports Messaging Service SID (MGfbcc830c288190a8b384fa9a566756d4),
+ * pre-approved Content Templates (e.g. HXb5b62575e6e4ff6129ad7c8efe1f983e),
+ * and standard body messages across Pakistan (+92), UK (+44), Ireland (+353).
  */
-export async function sendWhatsAppMessage({ to, from, body, mediaUrl }) {
+export async function sendWhatsAppMessage({
+  to,
+  from,
+  body,
+  mediaUrl,
+  contentSid,
+  contentVariables,
+  messagingServiceSid,
+  channel = 'whatsapp',
+}) {
   const normalizedTo = normalizePhoneNumber(to);
-  const formattedTo = normalizedTo.startsWith('whatsapp:') ? normalizedTo : `whatsapp:${normalizedTo}`;
+  const formattedTo = channel === 'whatsapp'
+    ? (normalizedTo.startsWith('whatsapp:') ? normalizedTo : `whatsapp:${normalizedTo}`)
+    : normalizedTo;
+
   const formattedFrom = from || twilioConfig.whatsappFrom;
+  const activeMessagingServiceSid = messagingServiceSid || twilioConfig.messagingServiceSid;
 
   if (twilioClient) {
     try {
       const payload = {
         to: formattedTo,
-        from: formattedFrom,
-        body,
       };
+
+      // Support Twilio Content Template (e.g. HXb5b62575e6e4ff6129ad7c8efe1f983e)
+      if (contentSid) {
+        payload.contentSid = contentSid;
+        if (contentVariables) {
+          payload.contentVariables = typeof contentVariables === 'object'
+            ? JSON.stringify(contentVariables)
+            : contentVariables;
+        }
+      } else if (body) {
+        payload.body = body;
+      }
+
+      // Use Messaging Service SID or fallback to sender phone
+      if (activeMessagingServiceSid && channel !== 'whatsapp') {
+        payload.messagingServiceSid = activeMessagingServiceSid;
+      } else if (channel === 'whatsapp') {
+        // WhatsApp sender or messaging service with whatsapp sender pool
+        if (activeMessagingServiceSid) {
+          payload.messagingServiceSid = activeMessagingServiceSid;
+        } else {
+          payload.from = formattedFrom;
+        }
+      } else {
+        payload.from = twilioConfig.fromNumber;
+      }
+
       if (mediaUrl) payload.mediaUrl = [mediaUrl];
 
       const res = await twilioClient.messages.create(payload);
-      logger.info(`[WhatsApp] Sent message SID: ${res.sid} to ${formattedTo}`);
+      logger.info(`[TwilioMessaging] Sent message SID: ${res.sid} to ${formattedTo} (Service: ${activeMessagingServiceSid || 'direct'})`);
       return {
         success: true,
         messageId: res.sid,
         status: res.status || 'sent',
         to: formattedTo,
-        from: formattedFrom,
+        from: payload.from || activeMessagingServiceSid,
+        messagingServiceSid: activeMessagingServiceSid,
       };
     } catch (err) {
-      logger.error('[WhatsApp] Twilio send error:', err.message);
+      logger.error('[TwilioMessaging] Twilio send error:', err.message);
       // Return structured response instead of unhandled crash
       return {
         success: false,
         error: err.message,
-        messageId: `mock_wa_${Date.now()}`,
+        messageId: `mock_msg_${Date.now()}`,
         status: 'queued',
         to: formattedTo,
         from: formattedFrom,
+        messagingServiceSid: activeMessagingServiceSid,
         mockFallback: true,
       };
     }
@@ -159,12 +204,25 @@ export async function sendWhatsAppMessage({ to, from, body, mediaUrl }) {
   // Graceful simulated delivery when offline or in sandbox
   return {
     success: true,
-    messageId: `sim_wa_${Date.now()}`,
+    messageId: `sim_msg_${Date.now()}`,
     status: 'delivered',
     to: formattedTo,
     from: formattedFrom,
+    messagingServiceSid: activeMessagingServiceSid,
     mockFallback: true,
   };
+}
+
+/**
+ * Sends an SMS message via Twilio Messaging Service.
+ */
+export async function sendSMSMessage({ to, body, messagingServiceSid }) {
+  return sendWhatsAppMessage({
+    to,
+    body,
+    messagingServiceSid: messagingServiceSid || twilioConfig.messagingServiceSid,
+    channel: 'sms',
+  });
 }
 
 export default {
@@ -173,4 +231,5 @@ export default {
   normalizePhoneNumber,
   createVoiceToken,
   sendWhatsAppMessage,
+  sendSMSMessage,
 };
