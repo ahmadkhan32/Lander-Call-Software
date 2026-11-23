@@ -15,6 +15,7 @@ import {
   DollarSign,
   Building,
   CheckCircle,
+  MessageSquare,
 } from 'lucide-react';
 
 export function LeadDetailPage() {
@@ -70,14 +71,23 @@ export function LeadDetailPage() {
             </div>
 
             {/* Quick action buttons matching Image 3 Screen C */}
-            <div className="flex items-center justify-center sm:justify-start gap-3 pt-3">
+            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 pt-3">
               <Button
                 variant="primary"
                 size="sm"
                 icon={Phone}
-                onClick={() => navigate('/app/dialer')}
+                onClick={() => navigate('/app/dialer?phone=%2B923470838718&name=John%20Smith&company=TechNova%20Inc.')}
               >
                 Quick Call
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white border-none"
+                onClick={() => navigate('/app/whatsapp?phone=%2B923470838718&name=John%20Smith')}
+              >
+                <MessageSquare className="w-3.5 h-3.5 mr-1.5" />
+                WhatsApp
               </Button>
               <Button
                 variant="secondary"

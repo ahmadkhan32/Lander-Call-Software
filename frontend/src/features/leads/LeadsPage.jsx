@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { Input } from '../../components/ui/Input';
 import { DataTable } from '../../components/data-display/DataTable';
 import { StatusBadge } from '../../components/data-display/StatusBadge';
 import {
@@ -14,7 +13,75 @@ import {
   Building,
   TrendingUp,
   FileSpreadsheet,
+  Phone,
+  MessageSquare,
+  Eye,
+  CheckCircle,
+  Users,
 } from 'lucide-react';
+
+const mockLeads = [
+  {
+    id: 'lead_001',
+    name: 'Sarah Khan',
+    company: 'Apex Telephony Corp',
+    phone: '+92 347 0838718',
+    email: 'sarah.khan@apextelecom.pk',
+    country: '🇵🇰 Pakistan',
+    status: 'In Negotiation',
+    assignedTo: 'Sarah Miller',
+    score: 92,
+    created_at: '2026-11-20',
+  },
+  {
+    id: 'lead_002',
+    name: 'Oliver Wright',
+    company: 'NextGen Systems UK',
+    phone: '+44 7911 123456',
+    email: 'oliver.wright@nextgen.co.uk',
+    country: '🇬🇧 United Kingdom',
+    status: 'Demo Scheduled',
+    assignedTo: 'Emily Chen',
+    score: 88,
+    created_at: '2026-11-21',
+  },
+  {
+    id: 'lead_003',
+    name: 'Liam O’Connor',
+    company: 'Emerald Logistics',
+    phone: '+353 87 1234567',
+    email: 'liam@emeraldlogistics.ie',
+    country: '🇮🇪 Ireland',
+    status: 'Contacted',
+    assignedTo: 'Mike Ross',
+    score: 75,
+    created_at: '2026-11-22',
+  },
+  {
+    id: 'lead_004',
+    name: 'Tariq Mehmood',
+    company: 'Indus Logistics Hub',
+    phone: '+92 321 8877665',
+    email: 'tariq.m@indushub.pk',
+    country: '🇵🇰 Pakistan',
+    status: 'Qualified',
+    assignedTo: 'Sarah Miller',
+    score: 96,
+    created_at: '2026-11-22',
+  },
+  {
+    id: 'lead_005',
+    name: 'Charlotte Davies',
+    company: 'Manchester Support Services',
+    phone: '+44 20 7946 0991',
+    email: 'c.davies@manchesterservices.co.uk',
+    country: '🇬🇧 United Kingdom',
+    status: 'New',
+    assignedTo: 'Jessica Day',
+    score: 64,
+    created_at: '2026-11-23',
+  },
+];
 
 const mockCustomers = [
   {
@@ -27,7 +94,6 @@ const mockCustomers = [
     users: [
       'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
       'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
     ],
     userCount: '+4',
     logoBg: 'bg-blue-600',
@@ -42,7 +108,6 @@ const mockCustomers = [
     subAbout: 'Build lasting customer relationships with Intercom.',
     users: [
       'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&auto=format&fit=crop&q=80',
     ],
     userCount: '+2',
     logoBg: 'bg-indigo-600',
@@ -57,8 +122,6 @@ const mockCustomers = [
     subAbout: 'The collaborative interface design tool.',
     users: [
       'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=100&auto=format&fit=crop&q=80',
     ],
     userCount: '+6',
     logoBg: 'bg-rose-500',
@@ -73,81 +136,102 @@ const mockCustomers = [
     subAbout: 'The issue tracking tool you will enjoy using.',
     users: [
       'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&auto=format&fit=crop&q=80',
     ],
     userCount: '+5',
     logoBg: 'bg-purple-600',
     logoLetter: 'L',
   },
-  {
-    id: 'cust_05',
-    name: 'Basecamp',
-    domain: 'basecamp.com',
-    status: 'Churned',
-    about: 'Project Management & Remote Work',
-    subAbout: 'Project management and team communication software.',
-    users: [
-      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=100&auto=format&fit=crop&q=80',
-    ],
-    userCount: '+1',
-    logoBg: 'bg-amber-500',
-    logoLetter: 'B',
-  },
-  {
-    id: 'cust_06',
-    name: 'Stripe',
-    domain: 'stripe.com',
-    status: 'Churned',
-    about: 'Financial Tools & Payments',
-    subAbout: 'Payment processing platform for the Internet.',
-    users: [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-    ],
-    userCount: '+8',
-    logoBg: 'bg-violet-600',
-    logoLetter: 'S',
-  },
-  {
-    id: 'cust_07',
-    name: 'Webflow',
-    domain: 'webflow.com',
-    status: 'Customer',
-    about: 'Web Development & Visual CMS',
-    subAbout: 'Create a custom website + no-code builder.',
-    users: [
-      'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80',
-    ],
-    userCount: '+2',
-    logoBg: 'bg-blue-500',
-    logoLetter: 'W',
-  },
 ];
 
 export function LeadsPage() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [page, setPage] = useState(1);
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
 
-  const filtered = mockCustomers.filter(
-    (c) =>
-      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.about.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.domain.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const isCustomersView = location.pathname.includes('customers');
 
-  const columns = [
+  // Leads columns
+  const leadsColumns = [
     {
-      header: (
-        <div className="flex items-center gap-2">
-          <input type="checkbox" className="rounded border-slate-300 text-brand" />
-          <span>Company &darr;</span>
-        </div>
-      ),
+      header: 'Prospect & Contact',
       accessor: (row) => (
         <div className="flex items-center gap-3">
-          <input type="checkbox" className="rounded border-slate-300 text-brand" onClick={(e) => e.stopPropagation()} />
-          <div className={`w-8 h-8 rounded-lg ${row.logoBg} text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm`}>
+          <div className="w-8 h-8 rounded-xl bg-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
+            {row.name.slice(0, 2).toUpperCase()}
+          </div>
+          <div>
+            <p className="font-bold text-slate-900 leading-tight">{row.name}</p>
+            <p className="text-xs text-slate-400">{row.company} &bull; <span className="text-slate-500">{row.country}</span></p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      header: 'Phone Number',
+      accessor: (row) => <span className="font-mono text-xs font-semibold text-slate-800">{row.phone}</span>,
+    },
+    {
+      header: 'Lead Status',
+      accessor: (row) => <StatusBadge status={row.status} />,
+    },
+    {
+      header: 'Lead Score',
+      accessor: (row) => (
+        <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+          {row.score}/100
+        </span>
+      ),
+    },
+    {
+      header: 'Assigned Agent',
+      accessor: (row) => <span className="text-xs font-medium text-slate-700">{row.assignedTo}</span>,
+    },
+    {
+      header: 'Quick Telephony Actions',
+      align: 'right',
+      accessor: (row) => (
+        <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+          <button
+            type="button"
+            title="Call on Softphone"
+            onClick={() => navigate(`/app/dialer?phone=${encodeURIComponent(row.phone)}&name=${encodeURIComponent(row.name)}&company=${encodeURIComponent(row.company)}`)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white text-xs font-semibold transition"
+          >
+            <Phone className="w-3.5 h-3.5" />
+            <span>Call</span>
+          </button>
+
+          <button
+            type="button"
+            title="Chat on WhatsApp"
+            onClick={() => navigate(`/app/whatsapp?phone=${encodeURIComponent(row.phone)}&name=${encodeURIComponent(row.name)}`)}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white text-xs font-semibold transition"
+          >
+            <MessageSquare className="w-3.5 h-3.5" />
+            <span>WhatsApp</span>
+          </button>
+
+          <button
+            type="button"
+            title="View Details"
+            onClick={() => navigate(`/app/leads/${row.id}`)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+          >
+            <Eye className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  // Customers columns
+  const customersColumns = [
+    {
+      header: 'Company Account',
+      accessor: (row) => (
+        <div className="flex items-center gap-3">
+          <div className={`w-8 h-8 rounded-lg ${row.logoBg} text-white font-bold text-xs flex items-center justify-center shrink-0`}>
             {row.logoLetter}
           </div>
           <div>
@@ -162,25 +246,20 @@ export function LeadsPage() {
       accessor: (row) => <StatusBadge status={row.status} />,
     },
     {
-      header: 'About',
+      header: 'About / Segment',
       accessor: (row) => (
         <div>
           <p className="font-medium text-slate-800 text-xs">{row.about}</p>
-          <p className="text-[11px] text-slate-400 mt-0.5 max-w-xs truncate">{row.subAbout}</p>
+          <p className="text-[11px] text-slate-400">{row.subAbout}</p>
         </div>
       ),
     },
     {
-      header: 'Users',
+      header: 'Seats & Users',
       accessor: (row) => (
         <div className="flex items-center -space-x-2">
           {row.users.map((url, i) => (
-            <img
-              key={i}
-              src={url}
-              alt="user"
-              className="w-7 h-7 rounded-full border-2 border-white object-cover"
-            />
+            <img key={i} src={url} alt="user" className="w-7 h-7 rounded-full border-2 border-white object-cover" />
           ))}
           {row.userCount && (
             <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-white bg-slate-100 text-[10px] font-bold text-slate-600">
@@ -190,137 +269,135 @@ export function LeadsPage() {
         </div>
       ),
     },
-    {
-      header: '',
-      align: 'right',
-      accessor: () => (
-        <button
-          onClick={(e) => { e.stopPropagation(); }}
-          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
-        >
-          <MoreVertical className="w-4 h-4" />
-        </button>
-      ),
-    },
   ];
+
+  const filteredLeads = mockLeads.filter(
+    (l) =>
+      l.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      l.phone.includes(searchTerm)
+  );
+
+  const filteredCustomers = mockCustomers.filter(
+    (c) =>
+      c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.domain.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div className="space-y-6">
-      {/* Top Header matching Image 2: "Total customers" */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-navy tracking-tight">
-            Total customers
+            {isCustomersView ? 'Customer Accounts & Client Directory' : 'Leads CRM & Telephony Prospects'}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 font-medium">
-            Manage your subscribed companies, accounts, and contact representatives.
+            {isCustomersView
+              ? 'Manage subscribed enterprise companies, seat licenses, and active accounts.'
+              : 'Direct integration with Twilio Voice dialer (+923470838718 caller ID) and WhatsApp Business messaging.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <Button variant="secondary" icon={Download} size="sm">
-            Export
+            Export CSV
           </Button>
-          <Button
-            variant="primary"
-            icon={Plus}
-            size="sm"
-            onClick={() => navigate('/app/leads/new')}
-          >
-            Add customer
-          </Button>
+          {!isCustomersView ? (
+            <Button
+              variant="primary"
+              icon={Plus}
+              size="sm"
+              onClick={() => navigate('/app/leads/new')}
+            >
+              Add New Lead
+            </Button>
+          ) : (
+            <Button
+              variant="primary"
+              icon={Plus}
+              size="sm"
+              onClick={() => navigate('/app/leads/new')}
+            >
+              Add Customer
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* 3 Top Stat Cards matching Image 2 */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Total customers</span>
-            <button className="text-slate-400 p-1"><MoreVertical className="w-4 h-4" /></button>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-navy">8,468</span>
+          <span className="text-xs font-semibold text-slate-500">
+            {isCustomersView ? 'Total Active Accounts' : 'Total CRM Leads'}
+          </span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-navy">
+              {isCustomersView ? '8,468' : '1,420'}
+            </span>
             <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-              &uarr; 20%
+              &uarr; 18% this month
             </span>
           </div>
         </Card>
 
         <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Members</span>
-            <button className="text-slate-400 p-1"><MoreVertical className="w-4 h-4" /></button>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-extrabold text-navy">1,210</span>
-            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
-              &uarr; 15%
+          <span className="text-xs font-semibold text-slate-500">
+            {isCustomersView ? 'Active Seats' : 'Contacted via Softphone'}
+          </span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-blue-600">
+              {isCustomersView ? '1,210' : '942'}
+            </span>
+            <span className="text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+              Twilio Voice Active
             </span>
           </div>
         </Card>
 
         <Card className="p-5">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Active now</span>
-            <button className="text-slate-400 p-1"><MoreVertical className="w-4 h-4" /></button>
-          </div>
-          <div className="mt-3 flex items-center justify-between">
-            <span className="text-3xl font-extrabold text-navy">316</span>
-            <div className="flex items-center -space-x-2">
-              {[
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80',
-                'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
-              ].map((url, i) => (
-                <img key={i} src={url} alt="active user" className="w-7 h-7 rounded-full border-2 border-white object-cover" />
-              ))}
-            </div>
+          <span className="text-xs font-semibold text-slate-500">
+            {isCustomersView ? 'Monthly Recurring' : 'WhatsApp Engagement'}
+          </span>
+          <div className="mt-2 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-emerald-600">
+              {isCustomersView ? '$248,500' : '82.4%'}
+            </span>
+            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">
+              WhatsApp Verified
+            </span>
           </div>
         </Card>
       </div>
 
-      {/* Table Section matching Image 2 */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h2 className="text-base font-bold text-navy">All customers ({filtered.length})</h2>
-            <p className="text-xs text-slate-500">Companies that have purchased an active subscription.</p>
-          </div>
-          <Button variant="secondary" size="sm" icon={FileSpreadsheet}>
-            Download all
-          </Button>
-        </div>
-
-        {/* Search bar matching Image 2 */}
-        <div className="relative max-w-md">
+      {/* Search & Filter */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search customers... (⌘K)"
+            placeholder={isCustomersView ? 'Search customers... (⌘K)' : 'Search leads by name, company, or phone...'}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-12 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand focus:border-brand shadow-sm"
+            className="w-full rounded-xl border border-slate-200 bg-white pl-10 pr-4 py-2 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand shadow-sm"
           />
-          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-            ⌘K
-          </span>
         </div>
-
-        <DataTable
-          columns={columns}
-          data={filtered}
-          onRowClick={(row) => navigate(`/app/leads/${row.id}`)}
-          pagination={{
-            currentPage: page,
-            totalPages: 184,
-            totalItems: 8468,
-            pageSize: 10,
-            onPageChange: (newPage) => setPage(newPage),
-          }}
-        />
       </div>
+
+      {/* Table */}
+      {isCustomersView ? (
+        <DataTable
+          columns={customersColumns}
+          data={filteredCustomers}
+          onRowClick={(row) => navigate(`/app/leads/${row.id}`)}
+        />
+      ) : (
+        <DataTable
+          columns={leadsColumns}
+          data={filteredLeads}
+          onRowClick={(row) => navigate(`/app/leads/${row.id}`)}
+        />
+      )}
     </div>
   );
 }

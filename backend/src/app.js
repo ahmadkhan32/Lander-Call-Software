@@ -19,6 +19,7 @@ import followUpsRouter     from './modules/follow-ups/followUpsRouter.js';
 import reportsRouter       from './modules/reports/reportsRouter.js';
 import usersRouter         from './modules/users/usersRouter.js';
 import webhooksRouter      from './modules/webhooks/webhooksRouter.js';
+import whatsappRouter      from './modules/whatsapp/whatsappRouter.js';
 
 const app = express();
 
@@ -86,6 +87,7 @@ app.use('/api/organizations', organizationsRouter);
 app.use('/api/roles',         rolesRouter);
 app.use('/api/leads',         leadsRouter);
 app.use('/api/calls',         callsRouter);
+app.use('/api/whatsapp',      whatsappRouter);
 app.use('/api/campaigns',     campaignsRouter);
 app.use('/api/follow-ups',    followUpsRouter);
 app.use('/api/reports',       reportsRouter);

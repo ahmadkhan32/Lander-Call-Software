@@ -173,5 +173,27 @@ router.patch('/:id', authenticate, requirePermission('calls.update'), async (req
   return successResponse(res, { call: data });
 });
 
+// DELETE /api/calls/:id
+router.delete('/:id', authenticate, requirePermission('calls.update'), async (req, res) => {
+  try {
+    const { error } = await callsRepository.delete(req.params.id, req.user.organizationId);
+    if (error) return handleDbError(error, logger, res, 'Failed to delete call record');
+
+    await auditRepository.log({
+      organizationId: req.user.organizationId,
+      actorId: req.user.id,
+      action: 'calls.deleted',
+      resourceType: 'call',
+      resourceId: req.params.id,
+      ipAddress: req.ip,
+    });
+
+    return successResponse(res, { success: true, deletedId: req.params.id });
+  } catch (err) {
+    logger.error('Delete call failed', { error: err.message });
+    return errorResponse(res, err.message || 'Failed to delete call', 400);
+  }
+});
+
 export default router;
 

@@ -37,6 +37,7 @@ const migrationFiles = [
   '009_rls_policies.sql',
   '010_multi_level_rbac_seed.sql',
   '011_organization_invitations.sql',
+  '012_whatsapp_and_call_intents.sql',
 ];
 
 let allSql = `-- ============================================================================

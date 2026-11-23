@@ -16,6 +16,7 @@ import { LeadDetailPage } from '../features/leads/LeadDetailPage';
 import { NewLeadPage } from '../features/leads/NewLeadPage';
 import { DialerPage } from '../features/dialer/DialerPage';
 import { CallsPage } from '../features/calls/CallsPage';
+import { WhatsAppPage } from '../features/whatsapp/WhatsAppPage';
 import { CampaignsPage, FollowUpsPage } from '../features/campaigns/CampaignPages';
 import { QAPage, ReportsPage, SettingsPage } from '../features/settings/OperationalPages';
 import { RolesPermissionsPage } from '../features/settings/RolesPermissionsPage';
@@ -365,6 +366,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: 'whatsapp',
+        element: (
+          <ProtectedRoute requiredPermission="leads.read">
+            <WhatsAppPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: 'campaigns',
         element: (
           <ProtectedRoute allowedRoles={['super_admin', 'business_admin', 'manager', 'supervisor', 'crm_manager']}>
@@ -391,7 +400,7 @@ export const router = createBrowserRouter([
       {
         path: 'reports',
         element: (
-          <ProtectedRoute allowedRoles={['reporting_analyst', 'manager', 'business_admin', 'super_admin']} requiredPermission="reports.view">
+          <ProtectedRoute allowedRoles={['reporting_analyst', 'manager', 'supervisor', 'business_admin', 'super_admin']} requiredPermission="reports.view">
             <ReportsPage />
           </ProtectedRoute>
         ),
@@ -438,6 +447,25 @@ export const router = createBrowserRouter([
       },
     ],
   },
+
+  // ── Universal Direct Navigation Aliases (Allows seamless direct URL navigation) ──
+  { path: '/leads', element: <Navigate to="/app/leads" replace /> },
+  { path: '/customers', element: <Navigate to="/app/customers" replace /> },
+  { path: '/dialer', element: <Navigate to="/app/dialer" replace /> },
+  { path: '/calls', element: <Navigate to="/app/calls" replace /> },
+  { path: '/whatsapp', element: <Navigate to="/app/whatsapp" replace /> },
+  { path: '/campaigns', element: <Navigate to="/app/campaigns" replace /> },
+  { path: '/follow-ups', element: <Navigate to="/app/follow-ups" replace /> },
+  { path: '/qa', element: <Navigate to="/app/qa" replace /> },
+  { path: '/reports', element: <Navigate to="/app/reports" replace /> },
+  { path: '/audit-logs', element: <Navigate to="/app/audit-logs" replace /> },
+  { path: '/organizations', element: <Navigate to="/app/organizations" replace /> },
+  { path: '/users', element: <Navigate to="/app/users" replace /> },
+  { path: '/invitations', element: <Navigate to="/app/invitations" replace /> },
+  { path: '/roles-permissions', element: <Navigate to="/app/roles-permissions" replace /> },
+  { path: '/roles', element: <Navigate to="/app/roles-permissions" replace /> },
+  { path: '/integrations', element: <Navigate to="/app/integrations" replace /> },
+  { path: '/settings', element: <Navigate to="/app/settings" replace /> },
 
   // ── Root & Fallback Redirects ─────────────────────────────────────────────────
   // Unauthenticated users are redirected to /login by ProtectedRoute

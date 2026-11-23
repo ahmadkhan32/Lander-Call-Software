@@ -18,6 +18,7 @@ import {
   Mail,
   ChevronRight,
   Globe,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../app/providers';
@@ -33,6 +34,7 @@ const allNavItems = [
   { label: 'Customers', icon: Building2, path: '/app/customers', permission: PERMISSIONS.VIEW_CUSTOMERS },
   { label: 'Dialer Softphone', icon: Headphones, path: '/app/dialer', pulse: true, permission: PERMISSIONS.CALL_DIALER },
   { label: 'Call History', icon: PhoneCall, path: '/app/calls', permission: PERMISSIONS.VIEW_CALLS },
+  { label: 'WhatsApp Inbox', icon: MessageSquare, path: '/app/whatsapp', badge: '3', permission: PERMISSIONS.MANAGE_LEADS },
   { label: 'Follow-ups', icon: CalendarCheck2, path: '/app/follow-ups', badge: '5', permission: PERMISSIONS.MANAGE_LEADS },
   { label: 'Campaigns', icon: FolderKanban, path: '/app/campaigns', permission: PERMISSIONS.VIEW_CAMPAIGNS },
   { label: 'QA & Reviews', icon: CheckCircle, path: '/app/qa', permission: PERMISSIONS.VIEW_QA },

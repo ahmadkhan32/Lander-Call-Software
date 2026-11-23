@@ -208,7 +208,13 @@ export function AuthProvider({ children }) {
    */
   const switchRole = (newRole) => {
     if (!user) return;
-    const isAuthorized = user.role === 'super_admin' || user.roles?.includes(newRole);
+    const original = user.originalRole || user.role;
+    const isAuthorized =
+      original === 'super_admin' ||
+      user.role === 'super_admin' ||
+      user.roles?.includes(newRole) ||
+      user.roles?.includes('super_admin');
+
     if (!isAuthorized) {
       console.warn(`Denied unauthorized role change attempt to: ${newRole}`);
       return;
@@ -218,6 +224,7 @@ export function AuthProvider({ children }) {
 
     const updated = {
       ...user,
+      originalRole: original,
       role: newRole,
       roleTitle: ROLE_LABELS[newRole] || newRole,
       permissions: targetAccount?.permissions || user.permissions || [],
